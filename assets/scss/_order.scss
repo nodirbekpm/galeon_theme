@@ -1,0 +1,127 @@
+.order{
+    padding: 100px 0 120px 0;
+    background-color: #F3F6F9;
+    
+    @media #{$tab}{
+        padding: 70px 0;
+    }
+
+    .sub_title{
+        margin-top: 20px;
+        color: #8D8D8D;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: normal;
+    }
+
+    .order_row{
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        margin-top: 50px;
+        gap:20px 0;
+
+        @media #{$tab}{
+			margin-top: 30px;
+		}
+
+        .order_item{
+            width: calc(25% - 15px);
+            background: #FFF;
+            padding: 20px 20px 35px 20px;
+
+            @media #{$tab}{
+                width: calc(50% - 10px);
+                padding: 20px 20px 25px 20px;
+            }
+
+            @media #{$mobile}{
+                width: 100%;
+            }
+
+            &:last-child{
+                width: calc(50% - 30px);
+                background-image: url(../images/order_last_child_bg.jpg);
+                background-size: cover;
+                background-repeat: no-repeat;
+                background-position: center;
+                padding: 50px;
+                display: flex;
+                align-items: end;
+
+                @media #{$tab}{
+                    width: 100%;
+                    padding: 20px;
+                    min-height: 220px;
+                }
+
+                @media #{$mobile}{
+                    padding: 0;
+
+                }
+
+            }
+
+            .button{
+                margin-top: 50px;
+                display: inline-block;
+                padding: 20px 40px;
+                color: #FFF;
+                font-family: Manrope;
+                font-size: 16px;
+                font-style: normal;
+                font-weight: 700;
+                line-height: normal;
+                transition: .3s all ease;
+                background: #23A8B3;
+
+                &:hover{
+                    background: #259192;
+                }
+
+                @media #{$mobile}{
+                    width: 100%;
+                    text-align: center;
+                    font-size: 14px;
+                }
+            }
+
+            img{
+                width: 40px;
+                height: 40px;
+                margin-bottom: 30px;
+
+                @media #{$tab}{
+                    margin-bottom: 20px;
+                    width: 24px;
+                    height: 24px;
+                }
+            }
+
+            .title{
+                color: #131A23;
+                font-size: 16px;
+                font-style: normal;
+                font-weight: 700;
+                line-height: normal;
+
+                @media #{$mobile}{
+                    font-size: 14px;
+                }
+            }
+
+            .info{
+                margin-top: 8px;
+                color: #8D8D8D;
+                font-size: 16px;
+                font-style: normal;
+                font-weight: 400;
+                line-height: normal;
+
+                @media #{$mobile}{
+                    font-size: 14px;
+                }
+            }
+        }
+    }
+}

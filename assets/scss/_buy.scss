@@ -1,0 +1,248 @@
+.buy{
+    
+
+    .section_title{
+        font-size: 34px;
+
+        @media #{$mobile}{
+            font-size: 22px;
+        }
+    }
+
+    .sub_title{
+        color: #8D8D8D;
+        font-family: Manrope;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: 126%; /* 20.16px */
+        margin-top: 20px;
+
+        @media #{$tab}{
+            margin-top: 10px;
+        }
+
+        @media #{$mobile}{
+            font-size: 14px;
+        }
+    }
+
+    form{
+        margin-top: 50px;
+        padding-bottom: 70px;
+
+        @media #{$tab}{
+            margin-top: 30px;
+            padding-bottom: 50px;
+        }
+
+
+        .input_row{
+            display: flex;
+            gap:20px;
+
+            @media #{$tab}{
+                flex-direction: column;
+
+            }
+
+            
+        }
+
+        input{
+                padding: 20px;
+                background: #fff;
+                border: 1px solid #DCE3EC;
+                outline: none;
+                box-shadow: none;
+
+                color: #131A23;
+                font-family: Manrope;
+                font-size: 16px;
+                font-style: normal;
+                font-weight: 400;
+                line-height: normal;
+
+                @media #{$tab}{
+                    width: 100%;
+                }
+
+                @media #{$mobile}{
+                    font-size: 14px;
+                }
+
+                &::placeholder{
+                    color: #8D8D8D;
+                    font-family: Manrope;
+                    font-size: 16px;
+                    font-style: normal;
+                    font-weight: 400;
+                    line-height: normal;
+
+                    @media #{$mobile}{
+                        font-size: 14px;
+                    }
+                }
+            }
+
+            select{
+                width: 345px;
+                padding: 20px;
+                background: #fff;
+                border: 1px solid #DCE3EC;
+                outline: none;
+                box-shadow: none;
+
+                color: #131A23;
+                font-family: Manrope;
+                font-size: 16px;
+                font-style: normal;
+                font-weight: 400;
+                line-height: normal;
+
+                 appearance: none;
+                -webkit-appearance: none;
+                -moz-appearance: none;
+
+                background: white url('../images/select_arrow.svg') no-repeat right 20px center;
+                background-size: 20px;
+                padding-right: 20px; /* Space for custom arrow */
+
+                &::-ms-expand {
+                    display: none;
+                }
+
+                @media #{$tab}{
+                    width: 100%;
+                }
+
+                @media #{$mobile}{
+                    font-size: 14px;
+                }
+            }
+
+        .courier_fields{
+            display: none;
+            margin: 20px 0;
+            gap:20px;
+            flex-wrap: wrap;
+
+            .awesomplete{
+                @media #{$tab}{
+                    width: 100%;
+                }
+            }
+            
+            textarea{
+                width: 350px;
+                height: 63px;
+                padding: 20px;
+                outline: none;
+                box-shadow: none;
+                resize: none;
+                border: 1px solid #DCE3EC;
+                outline: none;
+                box-shadow: none;
+
+                color: #131A23;
+                font-family: Manrope;
+                font-size: 16px;
+                font-style: normal;
+                font-weight: 400;
+                line-height: normal;
+
+                @media #{$tab}{
+                    height: 100px;
+                }
+
+                @media #{$mobile}{
+                    font-size: 14px;
+                }
+
+                &::placeholder{
+                    color: #8D8D8D;
+                    font-family: Manrope;
+                    font-size: 16px;
+                    font-style: normal;
+                    font-weight: 400;
+                    line-height: normal;
+
+                    @media #{$mobile}{
+                        font-size: 14px;
+                    }
+                }
+            }
+        }
+
+        .pickup_info{
+            display: none;
+            margin: 15px 0;
+            font-family: Manrope;
+            
+            @media #{$mobile}{
+                font-size: 14px;
+            }
+        }
+
+        .bottom{
+            display: flex;
+            gap:30px;
+            align-items: center;
+            margin-top: 20px;
+
+            @media #{$tab}{
+                flex-direction: column;
+                gap:20px
+            }
+
+            .button{
+                color: #FFF;
+                font-size: 16px;
+                font-style: normal;
+                font-weight: 700;
+                line-height: 140%; /* 22.4px */
+                padding: 13px 20px;
+                background: #23A8B3;
+                transition: .3s all ease;
+                border: none;
+                outline: none;
+                box-shadow: none;
+                &:hover {
+                    background: #259192;
+                }
+
+                @media #{$tab}{
+                    width: 100%;
+                    text-align: center;
+                    height: 60px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                @media #{$mobile}{
+                    font-size: 14px;
+                }
+            }
+
+            .text{
+                color: #8D8D8D;
+                font-family: Manrope;
+                font-size: 14px;
+                font-style: normal;
+                font-weight: 400;
+                line-height: 140%; /* 19.6px */
+                max-width: 450px;
+
+                @media #{$tab}{
+                    text-align: center;
+                }
+
+                @media #{$mobile}{
+                    font-size: 12px;
+                }
+
+            }
+        }
+    }
+}

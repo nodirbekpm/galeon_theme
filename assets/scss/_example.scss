@@ -1,0 +1,58 @@
+.example{
+    background: #F3F6F9;
+
+    .example_row{
+        margin-top: 50px;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap:20px 0;
+
+        @media #{$tab}{
+			margin-top: 30px;
+		}
+
+        .example_item{
+            width: calc(50% - 10px);
+            display: flex;
+            flex-direction: column;
+            gap:20px 0;
+
+            @media #{$tab}{
+                gap:10px;
+            }
+
+            @media #{$mobile}{
+                width: 100%;
+            }
+
+            img{
+                @media #{$tab}{
+                    height: 140px;
+                }
+            }
+
+            .bottom{
+                display: flex;
+                flex-direction: column;
+                gap:10px 0;
+
+                .title{
+                    color: #131A23;
+                    font-size: 16px;
+                    font-style: normal;
+                    font-weight: 700;
+                    line-height: normal;
+                }
+
+                .info{
+                    color: #8D8D8D;
+                    font-size: 16px;
+                    font-style: normal;
+                    font-weight: 400;
+                    line-height: normal;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,234 @@
+.products{
+    margin-top: 95px;
+
+    @media #{$tab}{
+        margin-top: 70px;
+    }
+
+    .top{
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        margin-bottom: 35px;
+
+        @media #{$tab}{
+            margin-bottom: 50px;
+        }
+
+        .download{
+            color: #23A8B3;
+            border-bottom: 1px dashed #23A8B3;
+            margin-top: 10px;
+            font-weight: 700;
+
+            @media #{$mobile}{
+                font-size: 12px;
+            }
+        }
+    }
+
+    .product_row{
+        display: flex;
+        flex-wrap: wrap;
+        gap:21px 0;
+        justify-content: space-between;
+
+        .product_item{
+            width: calc(33% - 14px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 40px;
+            background: #F0F0F0;
+            height: 298px;
+            background-image: url(../images/product1.png);
+            background-position: 95% 85%;
+            background-repeat: no-repeat;
+            cursor: pointer;
+            transition: .3s all ease;
+            
+            &:hover{
+                  background-color: #EAEAEA; /* base turquoise */
+
+                .link{
+                    img{
+                         transform: translate(1px, -1px); /* moves slightly to top-right */
+                    }
+                }
+            }
+            
+
+            @media #{$tab}{
+                width: calc(50% - 10px);
+                padding: 20px;
+                height: 218px;
+                background-size: 40%;
+            }
+            
+            @media #{$mobile}{
+                width: 100% !important;
+                height: 120px;
+                background-size: 100px 100px;
+            }
+            
+            &:nth-child(1){
+                @media #{$tab}{
+                    order: 1;
+                }
+            }
+
+            &:nth-child(2){
+                background-image: url(../images/product2.png);
+
+                @media #{$tab}{
+                    order:2;
+                }
+            }
+
+            &:nth-child(3){
+                background-image: url(../images/product3.png);
+                @media #{$tab}{
+                    order: 3;
+                }
+            }
+
+            &:nth-child(4){
+                background-image: url(../images/product4.png);
+               
+
+                @media #{$tab}{
+                    order: 5;
+                    width: 100% !important;
+                    background-size: 30%;
+                }
+
+                @media #{$mobile}{
+                    background-size: 130px 100px;
+                }
+            }
+
+            &:nth-child(5){
+                background-image: url(../images/product5.png);
+                @media #{$tab}{
+                    order: 4;
+                }
+                
+            }
+
+            &:nth-child(4),&:nth-child(5){
+                width: calc(50% - 10.5px);
+            }
+
+            &:nth-child(6){
+                width: 100%;
+                background-image: url(../images/product6.png);
+                background-position: 98% 85%;
+
+                @media #{$tab}{
+                    order: 6;
+                    height: 268px;
+                }
+
+                @media #{$mobile}{
+                    height: 282px;
+                    background-size: 170px 130px;
+                    background-position: 91% 10%;
+                }
+            }
+
+            .title{
+                color: #131A23;
+                font-size: 22px;
+                font-weight: 700;
+                line-height: 144%; /* 31.68px */
+
+                @media #{$tab}{
+                    font-size: 20px;
+                }
+
+                @media #{$mobile}{
+                    font-size: 14px;
+                }
+            }
+
+            .link{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px;
+                background: #23A8B3;
+                display: inline-flex;
+                width: 40px;
+                transition: .3s all ease;
+
+                &:hover{
+                    background: #259192;
+
+                    img{
+                         transform: translate(1px, -1px); /* moves slightly to top-right */
+                    }
+                }
+
+                @media #{$mobile}{
+                    padding: 5px;
+                    width: 24px;
+                }
+
+                img{
+                    width: 24px;
+                    height: 24px;
+                    transition: .3s all ease;
+
+                    @media #{$mobile}{
+                        width: 14px;
+                        height: 14px;
+                    }
+                }
+            }
+
+            .info_row{
+                margin-top: 20px;
+                display: flex;
+                gap: 10px 45px;
+                align-items: center;
+                flex-wrap: wrap;
+                max-width: 580px;
+
+                @media #{$bigTab}{
+                    gap:10px 30px;
+                }
+
+                @media #{$tab}{
+                    max-width: 420px;
+                    // justify-content: space-between;
+                    gap: 10px 0;
+                }
+
+                @media #{$mobile}{
+                    flex-direction: column;
+                }
+
+                .info_item{
+                    color: #8D8D8D;
+                    line-height: 150%; /* 24px */
+                    transition: .3s all ease;
+
+                    &:hover{
+                        color: #23A8B3;
+                    }
+
+                    @media #{$tab}{
+                        width: calc(50% - 25px);
+                        font-size: 16px;
+                    }
+
+                    @media #{$mobile}{
+                        width: 100%;
+                        font-size: 12px;
+                    }
+                }
+            }
+
+        }
+    }
+}
