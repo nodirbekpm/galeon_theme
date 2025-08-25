@@ -21,26 +21,26 @@ get_header();
         <div class="information">
             <!-- info item -->
             <div class="info_item">
-                <img src="assets/images/hero_info1.svg" alt="">
+                <img src="<?php echo get_template_directory_uri() ?>/assets/images/hero_info1.svg" alt="">
                 <div class="text">Класс защиты IP65 и выше</div>
             </div>
 
             <!-- info item -->
             <div class="info_item">
-                <img src="assets/images/hero_info2.svg" alt="">
+                <img src="<?php echo get_template_directory_uri() ?>/assets/images/hero_info2.svg" alt="">
                 <div class="text">Мягкий поропласт</div>
             </div>
 
             <!-- info item -->
             <div class="info_item">
-                <img src="assets/images/hero_info3.svg" alt="">
+                <img src="<?php echo get_template_directory_uri() ?>/assets/images/hero_info3.svg" alt="">
                 <div class="text">Производятся в России</div>
             </div>
         </div>
 
         <a class="hero_link" href="#">
 
-            <img src="assets/images/straight_arrow.svg" alt="">
+            <img src="<?php echo get_template_directory_uri() ?>/assets/images/straight_arrow.svg" alt="">
             <span>Листайте вниз</span>
         </a>
 
@@ -76,7 +76,7 @@ get_header();
                 <!-- slide -->
                 <a href="tool.html" class="swiper-slide">
                     <div class="top">
-                        <img src="assets/images/production1.png" alt="">
+                        <img src="<?php echo get_template_directory_uri() ?>/assets/images/production1.png" alt="">
                     </div>
                     <div class="bottom">
                         <div class="title">
@@ -89,7 +89,7 @@ get_header();
                 <!-- slide -->
                 <a href="tool.html#tool2" class="swiper-slide">
                     <div class="top">
-                        <img src="assets/images/production2.png" alt="">
+                        <img src="<?php echo get_template_directory_uri() ?>/assets/images/production2.png" alt="">
                     </div>
                     <div class="bottom">
                         <div class="title">
@@ -102,7 +102,7 @@ get_header();
                 <!-- slide -->
                 <a href="tool.html#tool3" class="swiper-slide">
                     <div class="top">
-                        <img src="assets/images/production3.png" alt="">
+                        <img src="<?php echo get_template_directory_uri() ?>/assets/images/production3.png" alt="">
                     </div>
                     <div class="bottom">
                         <div class="title">
@@ -115,7 +115,7 @@ get_header();
                 <!-- slide -->
                 <a href="tool.html#tool4" class="swiper-slide">
                     <div class="top">
-                        <img src="assets/images/production4.png" alt="">
+                        <img src="<?php echo get_template_directory_uri() ?>/assets/images/production4.png" alt="">
                     </div>
                     <div class="bottom">
                         <div class="title">
@@ -128,7 +128,7 @@ get_header();
                 <!-- slide -->
                 <a href="tool.html#tool5" class="swiper-slide">
                     <div class="top">
-                        <img src="assets/images/production5.png" alt="">
+                        <img src="<?php echo get_template_directory_uri() ?>/assets/images/production5.png" alt="">
                     </div>
                     <div class="bottom">
                         <div class="title">
@@ -141,7 +141,7 @@ get_header();
                 <!-- slide -->
                 <a href="tool.html#tool6" class="swiper-slide">
                     <div class="top">
-                        <img src="assets/images/production6.png" alt="">
+                        <img src="<?php echo get_template_directory_uri() ?>/assets/images/production6.png" alt="">
                     </div>
                     <div class="bottom">
                         <div class="title">
@@ -154,7 +154,7 @@ get_header();
                 <!-- slide -->
                 <a href="tool.html#tool7" class="swiper-slide">
                     <div class="top">
-                        <img src="assets/images/production7.png" alt="">
+                        <img src="<?php echo get_template_directory_uri() ?>/assets/images/production7.png" alt="">
                     </div>
                     <div class="bottom">
                         <div class="title">
@@ -167,7 +167,7 @@ get_header();
                 <!-- slide -->
                 <a href="tool.html#tool8" class="swiper-slide">
                     <div class="top">
-                        <img src="assets/images/production8.png" alt="">
+                        <img src="<?php echo get_template_directory_uri() ?>/assets/images/production8.png" alt="">
                     </div>
                     <div class="bottom">
                         <div class="title">
@@ -181,10 +181,10 @@ get_header();
             <div class="navigation">
                 <!-- Navigation buttons -->
                 <div class=" swiper-button-prev navigation_item">
-                    <img src="assets/images/navigation_item_arrow.svg" alt="">
+                    <img src="<?php echo get_template_directory_uri() ?>/assets/images/navigation_item_arrow.svg" alt="">
                 </div>
                 <div class=" swiper-button-next navigation_item">
-                    <img src="assets/images/navigation_item_arrow.svg" alt="">
+                    <img src="<?php echo get_template_directory_uri() ?>/assets/images/navigation_item_arrow.svg" alt="">
                 </div>
             </div>
         </div>
@@ -205,31 +205,31 @@ get_header();
             <!-- product item -->
             <a href="catalog.html" class="product_item">
                 <div class="title">Мини кейсы</div>
-                <div class="link"><img src="assets/images/link_arrow.svg" alt=""></div>
+                <div class="link"><img src="<?php echo get_template_directory_uri() ?>/assets/images/link_arrow.svg" alt=""></div>
             </a>
 
             <!-- product item -->
             <a href="catalog.html" class="product_item">
                 <div class="title">Средние кейсы</div>
-                <div class="link"><img src="assets/images/link_arrow.svg" alt=""></div>
+                <div class="link"><img src="<?php echo get_template_directory_uri() ?>/assets/images/link_arrow.svg" alt=""></div>
             </a>
 
             <!-- product item -->
             <a href="catalog.html" class="product_item">
                 <div class="title">Большие кейсы</div>
-                <div  class="link"><img src="assets/images/link_arrow.svg" alt=""></div>
+                <div  class="link"><img src="<?php echo get_template_directory_uri() ?>/assets/images/link_arrow.svg" alt=""></div>
             </a>
 
             <!-- product item -->
             <a href="catalog.html" class="product_item">
                 <div class="title">Длинные кейсы</div>
-                <div class="link"><img src="assets/images/link_arrow.svg" alt=""></div>
+                <div class="link"><img src="<?php echo get_template_directory_uri() ?>/assets/images/link_arrow.svg" alt=""></div>
             </a>
 
             <!-- product item -->
             <a href="catalog.html" class="product_item">
                 <div class="title">Кейсы для ноутбуков</div>
-                <div  class="link"><img src="assets/images/link_arrow.svg" alt=""></div>
+                <div  class="link"><img src="<?php echo get_template_directory_uri() ?>/assets/images/link_arrow.svg" alt=""></div>
             </a>
 
             <!-- product item -->
@@ -245,7 +245,7 @@ get_header();
                         <a href="#" class="info_item">Мобильный госпиталь</a>
                     </div>
                 </div>
-                <a href="catalog.html"  class="link"><img src="assets/images/link_arrow.svg" alt=""></a>
+                <a href="catalog.html"  class="link"><img src="<?php echo get_template_directory_uri() ?>/assets/images/link_arrow.svg" alt=""></a>
             </div>
         </div>
 
@@ -270,7 +270,7 @@ get_header();
         <div class="advantages_row">
             <!-- advantage item -->
             <a href="production.html" class="advantage_item">
-                <img src="assets/images/advantage1.svg" alt="">
+                <img src="<?php echo get_template_directory_uri() ?>/assets/images/advantage1.svg" alt="">
                 <div class="info_row">
                     <div class="title">Многоуровневый контроль качества</div>
                     <div class="info">Ваши изделия проходят строгую проверку: 5-этапное тестирование на вибростенде и ультразвуковой контроль сварных швов, обеспечивая их надежность в суровых условиях.</div>
@@ -279,7 +279,7 @@ get_header();
 
             <!-- advantage item -->
             <a href="production.html"  class="advantage_item">
-                <img src="assets/images/advantage2.svg" alt="">
+                <img src="<?php echo get_template_directory_uri() ?>/assets/images/advantage2.svg" alt="">
                 <div class="info_row">
                     <div class="title">Собственное конструкторское бюро</div>
                     <div class="info">Ваша задача получает точное инженерное воплощение: наши инженеры-конструкторы тесно сотрудничают с производством, находя оптимальные решения по материалам и интеграции систем.</div>
@@ -288,7 +288,7 @@ get_header();
 
             <!-- advantage item -->
             <a href="production.html"  class="advantage_item">
-                <img src="assets/images/advantage3.svg" alt="">
+                <img src="<?php echo get_template_directory_uri() ?>/assets/images/advantage3.svg" alt="">
                 <div class="info_row">
                     <div class="title">Ответственность в «Едином окне»</div>
                     <div class="info">Вы получаете одного ответственного исполнителя, который занимается всем: от ТЗ и проектирования до производства, интеграции и тестирования, что экономит ваше время и упрощает коммуникацию.</div>
@@ -297,7 +297,7 @@ get_header();
 
             <!-- advantage item -->
             <a href="production.html"  class="advantage_item">
-                <img src="assets/images/advantage4.svg" alt="">
+                <img src="<?php echo get_template_directory_uri() ?>/assets/images/advantage4.svg" alt="">
                 <div class="info_row">
                     <div class="title">Опыт работы со сложными проектами</div>
                     <div class="info">Нам доверяют ведущие предприятия промышленности, оборонного сектора и экстренных служб. Мы учитываем специфику работы с заказами, требующими соблюдения стандартов и конфиденциальности.</div>
@@ -314,7 +314,7 @@ get_header();
     <div class="container">
         <div class="application_row">
             <div class="left">
-                <!-- <img src="assets/images/application_image.svg" alt=""> -->
+                <!-- <img src="<?php echo get_template_directory_uri() ?>/assets/images/application_image.svg" alt=""> -->
             </div>
             <div class="right">
                 <div class="section_title">Свяжитесь с нами</div>
@@ -335,7 +335,7 @@ get_header();
                             <input required checked type="checkbox" id="confirm">
                             <span class="checkmark"></span>
                         </label>
-                        <label for="confirm" class="text">Нажимая на кнопку «Отправить», вы даете согласие на обработку своих <a  href="assets/documents/Personal_Data_Processing_Extended.pdf" target="_blank">персональных данных</a></label>
+                        <label for="confirm" class="text">Нажимая на кнопку «Отправить», вы даете согласие на обработку своих <a  href="<?php echo get_template_directory_uri() ?>/assets/documents/Personal_Data_Processing_Extended.pdf" target="_blank">персональных данных</a></label>
                     </div>
                 </form>
             </div>
