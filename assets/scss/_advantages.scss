@@ -1,0 +1,155 @@
+.advantages{
+    margin-top: 120px;
+    padding: 100px 0 58px 0;
+    background-image: url(../images/advantages_bg.png);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+
+    @media #{$tab}{
+        margin-top: 100px;
+        padding: 70px 0;
+    }
+
+    @media #{$mobile}{
+        margin-top: 70px;    
+    }
+
+    .section_title{
+        cursor: pointer;
+        color: #fff;
+        margin-bottom: 20px;
+
+        @media #{$mobile}{
+            margin-bottom: 10px;   
+        }
+    }
+
+    .sub_title{
+        color: #FFF;
+        font-size: 16px;
+        max-width: 710px;
+        line-height: 144%; /* 23.04px */
+
+        @media #{$mobile}{
+            font-size: 14px;
+        }
+    }
+
+    .button{
+        margin-top: 50px;
+        display: inline-block;
+        padding: 20px 40px;
+        color: #FFF;
+        font-family: Manrope;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 700;
+        line-height: normal;
+        transition: .3s all ease;
+        background: #23A8B3;
+        cursor: pointer;
+
+        &:hover{
+            background: #259192;
+        }
+
+        @media #{$tab}{
+            margin-top: 30px;
+        }
+        
+        @media #{$mobile}{
+            margin-top: 20px;    
+        }
+    }
+
+    .advantages_row{
+        margin-top: 70px;
+        display: flex;
+        justify-content: space-between;
+
+        @media #{$tab}{
+            margin-top: 50px;
+            flex-wrap: wrap;
+            gap:20px;
+        }
+
+        @media #{$mobile}{
+            margin-top: 40px;    
+            flex-wrap: nowrap;
+            overflow-x: scroll;
+            width: auto;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
+        }
+
+        .scroll-x::-webkit-scrollbar {
+            display: none;
+        }
+
+        .advantage_item{
+            width: calc(25% - 15px);
+            display: flex;
+            flex-direction: column;
+            gap:20px 0;
+            padding: 20px;
+            background: rgba(19, 26, 35, 0.10);
+            backdrop-filter: blur(3px);
+            cursor: pointer;
+
+            @media #{$tab}{
+                width: calc(50% - 10px);
+            }
+
+            @media #{$mobile}{
+                flex: 0 0 auto;
+                width: 240px;
+            }
+
+            img{
+                width: 54px;
+                height: 54px;
+
+                @media #{$mobile}{
+                    height: 44px;
+                    width: 44px;
+                }
+            }
+
+            .info_row{
+                display: flex;
+                flex-direction: column;
+                gap:10px 0;
+
+                .title{
+                    color: #FFF;
+                    font-size: 16px;
+                    font-style: normal;
+                    font-weight: 700;
+                    line-height: normal;
+
+                    @media #{$mobile}{
+                        font-size: 14px;
+                    }
+                }
+
+                .info{
+                    color: #DBDBDB;
+                    font-size: 16px;
+                    font-style: normal;
+                    font-weight: 400;
+                    line-height: normal;
+
+                    @media #{$mobile}{
+                        font-size: 14px;
+                    }
+                }
+            }
+            
+        }
+    }
+
+    
+}

@@ -1,0 +1,242 @@
+.tool{
+    padding: 152px 0 120px 0;
+    background-color: #F3F6F9;
+
+    @media #{$tab}{
+        padding: 70px 0 100px 0;
+    }
+
+    @media #{$mobile}{
+        padding: 70px 0 50px 0;
+    }
+
+    .tool_row{
+        display: flex;
+        flex-direction: column;
+        gap:80px 0;
+
+        @media #{$tab}{
+            gap: 50px 0;
+        }
+
+        .tool_item{
+            display: flex;
+            flex-direction: column;
+            gap: 30px 0;
+            padding-bottom: 80px;
+            border-bottom: 1px solid #DCE3EC;
+            position: relative;
+
+            &:nth-child(2n){
+                .top{
+                    flex-direction: row-reverse;
+
+                    @media #{$mobile}{
+                        flex-direction: column-reverse;
+                    }
+                }
+            }
+
+            @media #{$tab}{
+                padding-bottom: 50px;
+            }
+
+             @media #{$mobile}{
+                padding-bottom: 138px;
+
+                &:last-child{
+                    // padding-bottom: 120px;
+                    border-bottom: none;
+                }
+            }
+
+            .top{
+                display: flex;
+                gap:20px;
+                justify-content: space-between;
+
+                @media #{$mobile}{
+                    flex-direction: column-reverse;  
+                }
+
+                .left{
+                    width: calc(50% - 10px);
+                    display: flex;
+                    flex-direction: column;
+                    gap:20px 0;
+
+                    @media #{$tab}{
+                        gap:10px 0;
+                    }
+
+                    @media #{$mobile}{
+                        width: 100%;
+                    }
+
+                    .title{
+                        color: #131A23;
+                        font-size: 34px;
+                        font-style: normal;
+                        font-weight: 700;
+                        line-height: 120%; /* 40.8px */
+
+                        @media #{$tab}{
+                            font-size: 16px;
+                        }
+                    }
+
+                    .description{
+                        color: #8D8D8D;
+                        font-size: 16px;
+                        font-style: normal;
+                        font-weight: 400;
+                        line-height: 140%; /* 22.4px */
+
+                        @media #{$tab}{
+                            font-size: 14px;;
+                        }
+                    }
+
+                    .button_container{
+                        @media #{$mobile}{
+                           position: absolute;
+                           bottom: 50px; 
+                           width: 100%;
+                        }
+                    }
+
+                    .button{
+                        margin-top: 10px;
+                        display: inline-block;
+                        padding: 20px 40px;
+                        color: #FFF;
+                        font-family: Manrope;
+                        font-size: 16px;
+                        font-style: normal;
+                        font-weight: 700;
+                        line-height: normal;
+                        transition: .3s all ease;
+                        background: #23A8B3;
+
+                        &:hover{
+                            background: #259192;
+                        }
+
+                        @media #{$tab}{
+                            margin-top: 18px;
+                            font-size: 14px;
+                        }
+
+                        @media #{$mobile}{
+                            width: 100%;
+                            text-align: center;
+                        }
+                    }
+                }
+
+                .right{
+                    width: calc(50% - 10px);
+
+                    @media #{$tab}{
+                        height: 260px;
+                    }
+    
+                    @media #{$mobile}{
+                        width: 100%;
+                        height: 200px;
+                    }
+                    
+                    img{
+                        width: 100%;
+
+                        @media #{$tab}{
+                            height: 100%;
+                        }
+                    }
+                }
+            }
+
+            .bottom{
+                display: flex;
+                justify-content: space-between;
+
+                @media #{$mobile}{
+                    flex-wrap: nowrap;
+                    overflow-x: scroll;
+                    width: auto;
+                    gap: 20px;
+
+                    &::-webkit-scrollbar {
+                        display: none;
+                    }
+                }
+
+                .scroll-x::-webkit-scrollbar {
+                    display: none;
+                }
+
+                .info_item{
+                    width: calc(33% - 13.3px);
+                    display: flex;
+                    flex-direction:column ;
+                    gap:10px 0;
+                    background: #EBEFF4;
+                    padding: 20px;
+
+                    @media #{$tab}{
+                        width: calc(33.333% - 6.666px);
+                    }
+
+                    @media #{$mobile}{
+                        flex: 0 0 auto;
+                        width: 260px;
+                    }
+
+                    .little_title{
+                        padding-left: 24px;
+                        color: #131A23;
+                        font-size: 16px;
+                        font-style: normal;
+                        font-weight: 700;
+                        line-height: 140%; /* 22.4px */
+                        position: relative;
+
+                        @media #{$tab}{
+                            font-size: 14px;
+                        }
+
+                        &::after{
+                            content: "";
+                            position: absolute;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            left: 0px;
+                            background: #23A8B3;
+                            width: 14px;
+                            height: 14px;
+
+                            @media #{$tab}{
+                               top:5px;
+                               transform: translateY(0);
+                            }
+                        }
+                    }
+
+                    .info{
+                        color: #8D8D8D;
+                        font-size: 16px;
+                        font-style: normal;
+                        font-weight: 400;
+                        line-height: 140%; /* 22.4px */
+
+                        @media #{$tab}{
+                            font-size: 14px;
+                        }
+                    }
+                }
+            }
+        }
+
+        
+    }
+}

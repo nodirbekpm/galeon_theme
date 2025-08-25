@@ -1,0 +1,314 @@
+.application{
+    background-color: #F3F6F9;
+    padding: 120px 0;
+
+    @media #{$tab}{
+        padding: 100px 0 70px;
+    }
+
+    @media #{$mobile}{
+        padding: 70px 0;
+    }
+
+    &.page{
+        @media #{$tab}{
+			padding-top: 70px;
+		}
+        .application_row{
+
+            .left{
+                background-image: url(../images/application_page_image.png);
+            }
+
+            .right{
+                padding: 0;
+            }
+        }
+    }
+
+    .application_row{
+        display: flex;
+        justify-content: space-between;
+
+        @media #{$tab}{
+            flex-direction: column-reverse;
+            gap:40px;
+        }
+
+        .left{
+            width: calc(45% - 45px);
+            position: relative;
+            background-image: url(../images/application_image.svg);
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+
+            @media #{$bigTab}{
+                width: calc(50% - 45px);
+                background-image: url(../images/application_media_img.png);
+            }
+
+            @media #{$tab}{
+                width: 100%;
+                height: 240px;
+            }
+
+            @media #{$mobile}{
+                height: 180px;
+            }
+
+            &::after{
+                content: "";
+                position: absolute;
+                top: 30px;
+                left: 30px;
+                width: 104px;
+                height: 90px;
+                background-image: url(../images/application_sub_image.svg);
+                background-size: cover;
+                background-repeat: no-repeat;
+                
+                @media #{$bigLaptop}{
+                    top: 51px;
+                }
+
+                @media #{$laptop}{
+                    top: 30px;
+                }
+
+                @media #{$tab}{
+                    display: none;
+                }
+            }
+            
+            img{
+                height: 100%;
+                width: 100%;
+
+                @media #{$laptop}{
+                    object-fit: cover;
+                    border-radius: 15px;
+                }
+            }
+        }
+
+        .right{
+            width: calc(55% - 45px);
+            padding: 20px 0;
+
+            @media #{$tab}{
+                width: 100%;
+                padding: 0;
+            }
+
+            .section_title{
+                margin-bottom: 20px;
+            }
+
+            .sub_title{
+                color: #AFAFAF;
+                line-height: 150%;
+
+                @media #{$mobile}{
+                    font-size: 14px;
+                }
+            }
+
+            form{
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                gap:20px 0;
+                margin-top: 30px;
+
+                @media #{$mobile}{
+                    gap:10px;
+                }
+
+                .input_block{
+                    position: relative;
+                    input{
+                        padding-left: 57px;
+                    }
+
+                    &::after{
+                        content: "";
+                        width: 27px;
+                        height: 18px;
+                        background-image: url(../images/input_flag.svg);
+                        background-size: cover;
+                        background-position: center;
+                        position: absolute;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        left: 20px;
+                    }
+                }
+
+                input,textarea{
+                    background-color: #fff;
+                    padding: 20px;
+                    border: none;
+                    box-shadow: none;
+                    outline: none;
+                    width: 100%;
+                    height: 62px;   
+                    color: #8D8D8D;
+                    font-family: Manrope;
+                    font-size: 16px;
+                    font-style: normal;
+                    font-weight: 400;
+                    line-height: normal;
+
+                    @media #{$mobile}{
+                        font-size: 14px;
+                    }
+
+                    &::placeholder{
+                        color: #8D8D8D;
+                        font-family: Manrope;
+                        font-size: 16px;
+                        font-style: normal;
+                        font-weight: 400;
+                        line-height: normal;
+
+                        @media #{$mobile}{
+                            font-size: 14px;
+                        }
+                    }
+                }
+
+                textarea{
+                    height: 124px;
+                    resize: none;
+                }
+
+                button{
+                    background: #23A8B3;
+                    color: #FFF;
+                    font-family: Manrope;
+                    font-size: 16px;
+                    font-style: normal;
+                    font-weight: 700;
+                    line-height: normal;
+                    width: 212px;
+                    padding: 20px 0;
+                    border:none;
+                    transition: .3s all ease;
+                    cursor: pointer;
+
+                    &:hover{
+                        background: #259192;
+                    }
+
+                    @media #{$tab}{
+                        width: 100%;
+                    }
+
+                    @media #{$mobile}{
+                        font-size: 14px;
+                    }
+                }
+
+                /* confirm */
+                .confirm {
+                    display: flex;
+                    width: 100%;
+                    align-items: center;
+                    gap: 20px;
+                    font-size: 14px;
+                    max-width: 570px;
+
+                    @media #{$bigTab}{
+                        gap: 15px;
+                    }
+
+                    @media #{$tab}{
+                        max-width: 100%;
+                    }
+
+                    @media #{$mobile}{
+                        gap:10px;
+                    }
+                }
+
+                /* Hide the default checkbox */
+                .custom-checkbox input[type="checkbox"] {
+                    display: none;
+                }
+
+                /* Create a custom checkmark */
+                .custom-checkbox .checkmark {
+                    width: 18px;
+                    height: 18px;
+                    border: 2px solid #23A8B3;
+                    border-radius: 2px;
+                    display: inline-block;
+                    position: relative;
+                    cursor: pointer;
+                    background:  #23A8B3;
+                    margin-top: 5px;
+                }
+
+                /* Show a checkmark when checked */
+                .custom-checkbox input[type="checkbox"]:checked + .checkmark::after {
+                    content: "";
+                    position: absolute;
+                    left: 4px;
+                    top: 0px;
+                    width: 5px;
+                    height: 10px;
+                    border:  solid #fff;
+                    border-width: 0 3px 3px 0;
+                    transform: rotate(45deg);
+                    border-radius: 1px; /* ✅ Smoothens sharp edges */
+                }
+
+                /* Style for the label text */
+                .confirm .text {
+                    cursor: pointer;
+                    user-select: none;
+                    color: #8D8D8D;
+                    font-family: Manrope;
+                    font-size: 16px;
+                    font-style: normal;
+                    font-weight: 400;
+                    line-height: 150%; /* 24px */
+                    
+                    @media #{$tab}{
+                        font-size: 14px;
+                    }
+
+                    @media #{$mobile}{
+                        font-size: 12px;
+                    }
+                    
+                }
+
+                /* Style for the link */
+                .confirm .text a {
+                    color: #8D8D8D;
+                    font-family: Manrope;
+                    font-size: 16px;
+                    font-style: normal;
+                    font-weight: 400;
+                    line-height: 150%; /* 24px */
+                    border-bottom: 1px solid #8D8D8D;
+
+                    @media #{$tab}{
+                        font-size: 14px;
+                    }
+
+                    @media #{$mobile}{
+                        font-size: 12px;
+                    }
+                }
+            }
+        }
+
+    }
+
+    
+
+  
+}
