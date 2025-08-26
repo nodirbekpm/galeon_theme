@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="9d3b5ac7-50a4-42dd-9d43-c83025160029" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/template-parts/product/catalog-item.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/woocommerce/archive-product.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/woocommerce/content-product.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/woocommerce/content-single-product.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/woocommerce/single-product.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/woocommerce/taxanomy-product_cat.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/js/scripts.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/scripts.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/footer.php" beforeDir="false" afterPath="$PROJECT_DIR$/footer.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/functions.php" beforeDir="false" afterPath="$PROJECT_DIR$/functions.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/header.php" beforeDir="false" afterPath="$PROJECT_DIR$/header.php" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ComposerSettings">
+    <execution />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="31m3VxTbhZB4q0rUqH2dQXpCyEw" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/OSPanel/home/galeon.dev/public/wp-content/themes/galeon_theme&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-PS-243.26053.13" />
+        <option value="bundled-php-predefined-a98d8de5180a-1ec7b7818973-com.jetbrains.php.sharedIndexes-PS-243.26053.13" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9d3b5ac7-50a4-42dd-9d43-c83025160029" name="Changes" comment="" />
+      <created>1756115447471</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1756115447471</updated>
+      <workItem from="1756115448635" duration="3325000" />
+      <workItem from="1756182746962" duration="1902000" />
+      <workItem from="1756189694658" duration="16317000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
