@@ -2,17 +2,17 @@ document.addEventListener('DOMContentLoaded', function () {
     
 
     // Add to Cart button
-    document.querySelectorAll(".cart_btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        Swal.fire({
-          icon: 'success',
-          title: 'Товар добавлен в корзину!',
-          // text: 'Your item has been added.',
-          showConfirmButton: false,
-          timer: 1000
-        });
-      });
-    });
+    // document.querySelectorAll(".cart_btn").forEach(btn => {
+    //   btn.addEventListener("click", () => {
+    //     Swal.fire({
+    //       icon: 'success',
+    //       title: 'Товар добавлен в корзину!',
+    //       // text: 'Your item has been added.',
+    //       showConfirmButton: false,
+    //       timer: 1000
+    //     });
+    //   });
+    // });
 
     // delete Cart button
     document.querySelectorAll(".delete_icon").forEach(btn => {
@@ -28,17 +28,17 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Favourite button
-    document.querySelectorAll(".like_icon").forEach(btn => {
-      btn.addEventListener("click", () => {
-        Swal.fire({
-          icon: 'info',
-          title: 'Товар добавлен в избранное!',
-          // text: 'Check your wishlist.',
-          showConfirmButton: false,
-          timer: 1000
-        });
-      });
-    });
+    // document.querySelectorAll(".like_icon").forEach(btn => {
+    //   btn.addEventListener("click", () => {
+    //     Swal.fire({
+    //       icon: 'info',
+    //       title: 'Товар добавлен в избранное!',
+    //       // text: 'Check your wishlist.',
+    //       showConfirmButton: false,
+    //       timer: 1000
+    //     });
+    //   });
+    // });
 
     document.querySelectorAll(".like_icon").forEach(btn => {
     btn.addEventListener("click", () => {
