@@ -286,6 +286,20 @@ add_action('wp_ajax_my_wishlist_list', function(){
     wp_send_json_success(['items'=>$items]);
 });
 
+// Global helper: faqat bir marta e'lon bo'lsin
+if ( ! function_exists('my_is_in_wishlist') ) {
+    function my_is_in_wishlist( $product_id ) {
+        if ( ! is_user_logged_in() ) return false;
+        $list = get_user_meta( get_current_user_id(), 'wishlist_v1', true );
+        if ( ! is_array($list) ) return false;
+        foreach ( $list as $it ) {
+            $pid = absint( $it['pid'] ?? 0 );
+            if ( $pid === absint($product_id) ) return true;
+        }
+        return false;
+    }
+}
+
 /**
  *  Basket counter
  */
@@ -305,4 +319,328 @@ add_filter('woocommerce_add_to_cart_fragments', function($fragments){
     return $fragments;
 });
 
+
+
+
+
+/**
+ *  Archive Products
+ */
+/**
+ * ARCHIVE: AJAX bilan productlarni yuklash
+ */
+add_action('wp_enqueue_scripts', function () {
+    wp_enqueue_script('jquery'); // bu head’da chiqadi
+    wp_localize_script('jquery', 'GALEON_ARCHIVE', [
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce'    => wp_create_nonce('galeon_archive_nonce'),
+        'per_page_default' => 9,
+    ]);
+});
+
+
+/**
+ * Helper: term nomidan raqam ajratish ( "330 мм" => 330.0 )
+ */
+function galeon_num_from_term_name( $name ) {
+    $v = trim( preg_replace('~[^0-9\.\,]+~','', (string)$name ) );
+    $v = str_replace(',', '.', $v);
+    return ($v === '' || !is_numeric($v)) ? null : (float)$v;
+}
+
+/**
+ * Helper: taxonomiyadan (masalan: pa_length) nomi raqam bo‘lgan
+ * term_id larni [min,max] range bo‘yicha tanlash
+ */
+function galeon_term_ids_in_range( $taxonomy, $min = null, $max = null ) {
+    if ( $min === null && $max === null ) return [];
+    $terms = get_terms(['taxonomy'=>$taxonomy,'hide_empty'=>false]);
+    $out = [];
+    foreach ( $terms as $t ) {
+        $n = galeon_num_from_term_name( $t->name );
+        if ( $n === null ) continue;
+        if ( $min !== null && $n < $min ) continue;
+        if ( $max !== null && $n > $max ) continue;
+        $out[] = (int)$t->term_id;
+    }
+    return $out;
+}
+
+/**
+ * ARCHIVE: AJAX bilan productlarni yuklash (search + filterlar + facetlar)
+ */
+add_action('wp_enqueue_scripts', function () {
+    wp_enqueue_script('jquery');
+    wp_localize_script('jquery', 'GALEON_ARCHIVE', [
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce'    => wp_create_nonce('galeon_archive_nonce'),
+        'per_page_default' => 9,
+    ]);
+});
+
+add_action('wp_ajax_nopriv_galeon_load_products', 'galeon_load_products');
+add_action('wp_ajax_galeon_load_products',        'galeon_load_products');
+function galeon_load_products(){
+    if ( empty($_POST['nonce']) || ! wp_verify_nonce($_POST['nonce'], 'galeon_archive_nonce') ) {
+        wp_send_json_error(['message'=>'Bad nonce'], 403);
+    }
+
+    // --- UI’dan ---
+    $mode     = sanitize_text_field($_POST['mode'] ?? 'replace'); // replace | append
+    $page     = max(1, intval($_POST['page'] ?? 1));
+    $per_page = max(1, intval($_POST['per_page'] ?? 9));
+    $search   = sanitize_text_field($_POST['search'] ?? '');
+    $cat_slug = sanitize_title($_POST['category'] ?? '');
+
+    $read_range = function($k){
+        $min = isset($_POST[$k]['min']) ? trim((string)$_POST[$k]['min']) : '';
+        $max = isset($_POST[$k]['max']) ? trim((string)$_POST[$k]['max']) : '';
+        $min = ($min === '') ? null : (float)$min;
+        $max = ($max === '') ? null : (float)$max;
+        return [$min, $max];
+    };
+    list($price_min,$price_max) = $read_range('price');
+    list($len_min,$len_max)     = $read_range('len');
+    list($wid_min,$wid_max)     = $read_range('wid');
+    list($hei_min,$hei_max)     = $read_range('hei');
+    list($wei_min,$wei_max)     = $read_range('wei');
+
+    $variants = [];
+    if (!empty($_POST['variants']) && is_array($_POST['variants'])) {
+        foreach ($_POST['variants'] as $v) $variants[] = sanitize_title($v);
+        $variants = array_values(array_unique(array_filter($variants)));
+    }
+
+    // --- tax/meta query ---
+    $tax_query  = ['relation'=>'AND'];
+    $meta_query = ['relation'=>'AND'];
+
+    if ( $cat_slug !== '' ) {
+        $tax_query[] = ['taxonomy'=>'product_cat','field'=>'slug','terms'=>[$cat_slug],'operator'=>'IN'];
+    }
+    if ( !empty($variants) ) {
+        $tax_query[] = ['taxonomy'=>'pa_option','field'=>'slug','terms'=>$variants,'operator'=>'IN'];
+    }
+
+    $attr_ranges = [
+        'pa_length' => [$len_min,$len_max],
+        'pa_width'  => [$wid_min,$wid_max],
+        'pa_height' => [$hei_min,$hei_max],
+        'pa_weight' => [$wei_min,$wei_max],
+    ];
+    foreach ($attr_ranges as $tax => $pair) {
+        list($mn,$mx) = $pair;
+        if ($mn===null && $mx===null) continue;
+        $term_ids = galeon_term_ids_in_range($tax, $mn, $mx);
+        if (!empty($term_ids)) {
+            $tax_query[] = ['taxonomy'=>$tax,'field'=>'term_id','terms'=>$term_ids,'operator'=>'IN'];
+        } else {
+            wp_send_json_success([
+                'mode'        => $mode,
+                'html'        => '',
+                'total'       => 0,
+                'page'        => $page,
+                'per_page'    => $per_page,
+                'total_pages' => 0,
+                'facets'      => [
+                    'price'=>['min'=>0,'max'=>0],'len'=>['min'=>0,'max'=>0],
+                    'wid'=>['min'=>0,'max'=>0],'hei'=>['min'=>0,'max'=>0],'wei'=>['min'=>0,'max'=>0],
+                ],
+            ]);
+        }
+    }
+
+    if ($price_min !== null || $price_max !== null) {
+        $cmp = [];
+        if ($price_min!==null && $price_max!==null) $cmp = ['compare'=>'BETWEEN','type'=>'NUMERIC','value'=>[$price_min,$price_max]];
+        elseif ($price_min!==null)                  $cmp = ['compare'=>'>=','type'=>'NUMERIC','value'=>$price_min];
+        else                                        $cmp = ['compare'=>'<=','type'=>'NUMERIC','value'=>$price_max];
+
+        $meta_query[] = [
+            'relation'=>'OR',
+            array_merge(['key'=>'_price'], $cmp),
+            array_merge(['key'=>'_min_variation_price'], $cmp),
+        ];
+    }
+
+    // --- Query args ---
+    $args = [
+        'post_type'           => 'product',
+        'post_status'         => 'publish',
+        's'                   => $search,
+        'tax_query'           => $tax_query,
+        'meta_query'          => $meta_query,
+        'orderby'             => 'date',
+        'order'               => 'DESC',
+        'ignore_sticky_posts' => true,
+        'no_found_rows'       => false,
+    ];
+
+    // replace: paginated, append: offset/limit
+    if ($mode === 'append') {
+        $offset = max(0, intval($_POST['offset'] ?? 0));
+        $limit  = max(1, intval($_POST['limit']  ?? 4));
+        $args['posts_per_page'] = $limit;
+        $args['offset']         = $offset;
+    } else {
+        $args['posts_per_page'] = $per_page;
+        $args['paged']          = $page;
+    }
+
+    $q = new WP_Query($args);
+
+    ob_start();
+    if ($q->have_posts()){
+        while ($q->have_posts()){ $q->the_post();
+            $p = wc_get_product(get_the_ID());
+            if ($p) get_template_part('template-parts/product/catalog-item', null, ['product'=>$p]);
+        }
+        wp_reset_postdata();
+    }
+    $html = ob_get_clean();
+
+    // total / facets – doimiy (append/repl o‘xshash)
+    $total       = intval($q->found_posts);
+    $total_pages = ($mode==='append') ? 0 : ($per_page ? (int)ceil($total/$per_page) : 1);
+
+    // Facets (mos keladigan hamma postlar bo‘yicha)
+    $args_all = $args;
+    unset($args_all['posts_per_page'],$args_all['paged'],$args_all['offset']);
+    $args_all['posts_per_page'] = -1;
+    $args_all['fields']         = 'ids';
+    $args_all['no_found_rows']  = true;
+    $ids = get_posts($args_all);
+
+    $facet = [
+        'price'=>['min'=>0,'max'=>0],'len'=>['min'=>0,'max'=>0],
+        'wid'=>['min'=>0,'max'=>0],'hei'=>['min'=>0,'max'=>0],'wei'=>['min'=>0,'max'=>0],
+    ];
+    if (!empty($ids)) {
+        $pmin=null;$pmax=null;
+        foreach($ids as $pid){
+            $pr = wc_get_product($pid);
+            if (!$pr) continue;
+            $v = (float)$pr->get_price();
+            if ($v<=0) continue;
+            if ($pmin===null || $v<$pmin) $pmin=$v;
+            if ($pmax===null || $v>$pmax) $pmax=$v;
+        }
+        if ($pmin!==null) $facet['price'] = ['min'=>$pmin,'max'=>$pmax];
+
+        $calc = function($tax) use ($ids){
+            $terms = wp_get_object_terms($ids, $tax, ['fields'=>'all']);
+            if (is_wp_error($terms) || empty($terms)) return ['min'=>0,'max'=>0];
+            $vals=[]; foreach($terms as $t){ $n=galeon_num_from_term_name($t->name); if($n!==null) $vals[]=$n; }
+            if (!$vals) return ['min'=>0,'max'=>0];
+            return ['min'=>min($vals), 'max'=>max($vals)];
+        };
+        $facet['len']=$calc('pa_length');
+        $facet['wid']=$calc('pa_width');
+        $facet['hei']=$calc('pa_height');
+        $facet['wei']=$calc('pa_weight');
+    }
+
+    wp_send_json_success([
+        'mode'        => $mode,
+        'html'        => $html,
+        'total'       => $total,
+        'page'        => $page,
+        'per_page'    => $per_page,
+        'total_pages' => $total_pages,
+        'facets'      => $facet,
+    ]);
+}
+
+
+/**
+ *  Cart
+ */
+
+add_filter('template_include', function($template){
+    if ( function_exists('is_cart') && is_cart() ) {
+        $t = locate_template('pages/page-cart.php', false, false);
+        if ($t) return $t;
+    }
+    return $template;
+}, 20);
+
+
+// =====================
+// CART AJAX HANDLERS
+// =====================
+add_action('wp_ajax_nopriv_galeon_cart_update_qty', 'galeon_cart_update_qty');
+add_action('wp_ajax_galeon_cart_update_qty',        'galeon_cart_update_qty');
+function galeon_cart_update_qty(){
+    if ( empty($_POST['nonce']) || ! wp_verify_nonce($_POST['nonce'], 'galeon_cart_nonce') ) {
+        wp_send_json_error(['message'=>'Bad nonce'], 403);
+    }
+    $key = sanitize_text_field($_POST['cart_item_key'] ?? '');
+    $qty = max(0, intval($_POST['quantity'] ?? 0));
+
+    $cart = WC()->cart;
+    if (!$cart) wp_send_json_error(['message'=>'No cart'], 400);
+
+    $items = $cart->get_cart();
+    if ( !isset($items[$key]) ) wp_send_json_error(['message'=>'Item not found'], 404);
+
+    // Yangilash
+    $cart->set_quantity($key, $qty, true); // true => recalc totals
+    $cart->calculate_totals();
+
+    $removed = ($qty === 0) || !isset($cart->get_cart()[$key]);
+    $line_html = '';
+    if (!$removed) {
+        $cart_item = $cart->get_cart()[$key];
+        $_product  = $cart_item['data'];
+        $line_html = $cart->get_product_subtotal($_product, $cart_item['quantity']);
+        if ( $_product->get_price() === '' || $_product->get_price() === null ) {
+            $line_html = '<span class="price-request">По запросу</span>';
+        }
+    }
+
+    wp_send_json_success([
+        'removed'            => $removed,
+        'total_items'        => $cart->get_cart_contents_count(),
+        'total_html'         => wc_price( (float) $cart->get_total('edit') ),
+        'line_subtotal_html' => $line_html,
+    ]);
+}
+
+add_action('wp_ajax_nopriv_galeon_cart_remove_item', 'galeon_cart_remove_item');
+add_action('wp_ajax_galeon_cart_remove_item',        'galeon_cart_remove_item');
+function galeon_cart_remove_item(){
+    if ( empty($_POST['nonce']) || ! wp_verify_nonce($_POST['nonce'], 'galeon_cart_nonce') ) {
+        wp_send_json_error(['message'=>'Bad nonce'], 403);
+    }
+    $key  = sanitize_text_field($_POST['cart_item_key'] ?? '');
+    $cart = WC()->cart;
+    if (!$cart) wp_send_json_error(['message'=>'No cart'], 400);
+
+    $cart->remove_cart_item($key);
+    $cart->calculate_totals();
+
+    wp_send_json_success([
+        'total_items' => $cart->get_cart_contents_count(),
+        'total_html'  => wc_price( (float) $cart->get_total('edit') ),
+    ]);
+}
+
+add_action('wp_ajax_nopriv_galeon_cart_clear', 'galeon_cart_clear');
+add_action('wp_ajax_galeon_cart_clear',        'galeon_cart_clear');
+function galeon_cart_clear(){
+    if ( empty($_POST['nonce']) || ! wp_verify_nonce($_POST['nonce'], 'galeon_cart_nonce') ) {
+        wp_send_json_error(['message'=>'Bad nonce'], 403);
+    }
+    $cart = WC()->cart;
+    if (!$cart) wp_send_json_error(['message'=>'No cart'], 400);
+
+    $cart->empty_cart();
+    $cart->calculate_totals();
+
+    wp_send_json_success([
+        'empty'       => true,
+        'total_items' => 0,
+        'total_html'  => wc_price(0),
+    ]);
+}
 
