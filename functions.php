@@ -551,3 +551,96 @@ function galeon_load_products(){
     ]);
 }
 
+
+/**
+ *  Cart
+ */
+
+add_filter('template_include', function($template){
+    if ( function_exists('is_cart') && is_cart() ) {
+        $t = locate_template('pages/page-cart.php', false, false);
+        if ($t) return $t;
+    }
+    return $template;
+}, 20);
+
+
+// =====================
+// CART AJAX HANDLERS
+// =====================
+add_action('wp_ajax_nopriv_galeon_cart_update_qty', 'galeon_cart_update_qty');
+add_action('wp_ajax_galeon_cart_update_qty',        'galeon_cart_update_qty');
+function galeon_cart_update_qty(){
+    if ( empty($_POST['nonce']) || ! wp_verify_nonce($_POST['nonce'], 'galeon_cart_nonce') ) {
+        wp_send_json_error(['message'=>'Bad nonce'], 403);
+    }
+    $key = sanitize_text_field($_POST['cart_item_key'] ?? '');
+    $qty = max(0, intval($_POST['quantity'] ?? 0));
+
+    $cart = WC()->cart;
+    if (!$cart) wp_send_json_error(['message'=>'No cart'], 400);
+
+    $items = $cart->get_cart();
+    if ( !isset($items[$key]) ) wp_send_json_error(['message'=>'Item not found'], 404);
+
+    // Yangilash
+    $cart->set_quantity($key, $qty, true); // true => recalc totals
+    $cart->calculate_totals();
+
+    $removed = ($qty === 0) || !isset($cart->get_cart()[$key]);
+    $line_html = '';
+    if (!$removed) {
+        $cart_item = $cart->get_cart()[$key];
+        $_product  = $cart_item['data'];
+        $line_html = $cart->get_product_subtotal($_product, $cart_item['quantity']);
+        if ( $_product->get_price() === '' || $_product->get_price() === null ) {
+            $line_html = '<span class="price-request">По запросу</span>';
+        }
+    }
+
+    wp_send_json_success([
+        'removed'            => $removed,
+        'total_items'        => $cart->get_cart_contents_count(),
+        'total_html'         => wc_price( (float) $cart->get_total('edit') ),
+        'line_subtotal_html' => $line_html,
+    ]);
+}
+
+add_action('wp_ajax_nopriv_galeon_cart_remove_item', 'galeon_cart_remove_item');
+add_action('wp_ajax_galeon_cart_remove_item',        'galeon_cart_remove_item');
+function galeon_cart_remove_item(){
+    if ( empty($_POST['nonce']) || ! wp_verify_nonce($_POST['nonce'], 'galeon_cart_nonce') ) {
+        wp_send_json_error(['message'=>'Bad nonce'], 403);
+    }
+    $key  = sanitize_text_field($_POST['cart_item_key'] ?? '');
+    $cart = WC()->cart;
+    if (!$cart) wp_send_json_error(['message'=>'No cart'], 400);
+
+    $cart->remove_cart_item($key);
+    $cart->calculate_totals();
+
+    wp_send_json_success([
+        'total_items' => $cart->get_cart_contents_count(),
+        'total_html'  => wc_price( (float) $cart->get_total('edit') ),
+    ]);
+}
+
+add_action('wp_ajax_nopriv_galeon_cart_clear', 'galeon_cart_clear');
+add_action('wp_ajax_galeon_cart_clear',        'galeon_cart_clear');
+function galeon_cart_clear(){
+    if ( empty($_POST['nonce']) || ! wp_verify_nonce($_POST['nonce'], 'galeon_cart_nonce') ) {
+        wp_send_json_error(['message'=>'Bad nonce'], 403);
+    }
+    $cart = WC()->cart;
+    if (!$cart) wp_send_json_error(['message'=>'No cart'], 400);
+
+    $cart->empty_cart();
+    $cart->calculate_totals();
+
+    wp_send_json_success([
+        'empty'       => true,
+        'total_items' => 0,
+        'total_html'  => wc_price(0),
+    ]);
+}
+

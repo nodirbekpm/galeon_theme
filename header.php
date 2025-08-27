@@ -111,7 +111,7 @@
                                       fill="#131A23"/>
                             </svg>
                         </a>
-                        <a href="cart.html" class="header_basket header_icon_item">
+                        <a href="<?php echo esc_url( wc_get_cart_url() ); ?>" class="header_basket header_icon_item">
                             <?php
                             $count = ( function_exists('WC') && WC()->cart ) ? WC()->cart->get_cart_contents_count() : 0;
                             ?>

@@ -7,12 +7,9 @@ get_header();
 <section class="hero page catalog">
     <div class="container">
 
-        <!-- breadcrumb -->
-        <div class="breadcrumb">
-            <a href="index.html">Главная</a>
-            <span>/</span>
-            <a href="catalog.html" class="active">Все кейсы</a>
-        </div>
+        <?php if (function_exists('yoast_breadcrumb')) {
+            yoast_breadcrumb('<div class="breadcrumb">', '</div>');
+        } ?>
 
         <div class="main_title">
             Все кейсы
