@@ -37,17 +37,6 @@ if (empty($imgs)) {
 
 <div class="catalog_item">
     <div class="top_block">
-        <?php
-        function my_is_in_wishlist($product_id){
-            if ( ! is_user_logged_in() ) return false;
-            $list = get_user_meta(get_current_user_id(), 'wishlist_v1', true);
-            if (!is_array($list)) return false;
-            foreach ($list as $it) {
-                if (absint($it['pid'] ?? 0) === $product_id) return true;
-            }
-            return false;
-        }
-        ?>
         <div class="like_icon <?php echo my_is_in_wishlist( $product->get_id() ) ? 'active' : ''; ?>"
              data-product_id="<?php echo esc_attr( $product->get_id() ); ?>"
              data-product_type="<?php echo esc_attr( $product->get_type() ); ?>"></div>

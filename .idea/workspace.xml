@@ -5,17 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9d3b5ac7-50a4-42dd-9d43-c83025160029" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/template-parts/product/catalog-item.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/woocommerce/archive-product.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/woocommerce/content-product.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/woocommerce/content-single-product.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/woocommerce/single-product.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/woocommerce/taxanomy-product_cat.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/php.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/scripts.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/scripts.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/footer.php" beforeDir="false" afterPath="$PROJECT_DIR$/footer.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/functions.php" beforeDir="false" afterPath="$PROJECT_DIR$/functions.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/header.php" beforeDir="false" afterPath="$PROJECT_DIR$/header.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/template-parts/product/catalog-item.php" beforeDir="false" afterPath="$PROJECT_DIR$/template-parts/product/catalog-item.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/woocommerce/archive-product.php" beforeDir="false" afterPath="$PROJECT_DIR$/woocommerce/archive-product.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,6 +42,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -69,7 +64,9 @@
       <updated>1756115447471</updated>
       <workItem from="1756115448635" duration="3325000" />
       <workItem from="1756182746962" duration="1902000" />
-      <workItem from="1756189694658" duration="16317000" />
+      <workItem from="1756189694658" duration="17387000" />
+      <workItem from="1756271807969" duration="793000" />
+      <workItem from="1756272626802" duration="7199000" />
     </task>
     <servers />
   </component>
