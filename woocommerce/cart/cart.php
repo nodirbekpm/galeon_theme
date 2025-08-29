@@ -241,38 +241,40 @@ $checkout_url = wc_get_checkout_url();
 
         // Plus/Minus click
         document.addEventListener('click', async function(e){
-            const btn = e.target.closest('.qty_btn');
+            const btn = e.target.closest('.product_card.cart .qty_btn');
             if (!btn) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
             const item = btn.closest('.product_card_item');
             const input = item ? item.querySelector('.js-qty') : null;
             if (!item || !input) return;
 
-            const step = parseInt(btn.dataset.step || '0', 10);
+            const isPlus = btn.classList.contains('plus');
+            const delta  = isPlus ? 1 : -1;
+
             let val = parseInt(input.value || '1', 10);
-            val = isNaN(val) ? 1 : val + step;
-            if (val < 1) val = 1;
-            if (val > 1000) val = 1000;
+            if (isNaN(val)) val = 1;
+            val = Math.max(1, Math.min(1000, val + delta));
             input.value = String(val);
 
             const key = item.dataset.cart_item_key;
             try {
-                const data = await setQty(key, val);
+                const data = await setQty(key, val); // sizdagi setQty()
                 if (data.removed) {
-                    // qty 0 bo'lgan — item DOMdan ketadi
                     item.remove();
                 } else {
                     updateLineSubtotalUI(item, data.line_subtotal_html);
                 }
                 updateTotalsUI(data);
                 refreshFragments();
-                toast('success','Обновлено');
-                // Agar savat bo'sh bo'lib qolsa — bo'sh templatega refresh:
                 if (data.total_items === 0) window.location.reload();
             } catch(err) {
                 toast('error','Не удалось обновить количество');
             }
-        });
+        }, true); // capturing — boshqa handlerlar qo'shilib ketmasin
 
         // Qty input manual change (debounced)
         let qtyTimer;

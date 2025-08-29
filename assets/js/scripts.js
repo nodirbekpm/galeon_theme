@@ -483,70 +483,6 @@ document.querySelectorAll('.catalog_item').forEach((item, index) => {
 
 
 
-    // Quantity buttons
-    document.querySelectorAll('.catalog_item').forEach(item => {
-        const qtyEl = item.querySelector('.qty');
-        const plusBtn = item.querySelector('.plus');
-        const minusBtn = item.querySelector('.minus');
-
-        // Plus button
-        plusBtn.addEventListener('click', () => {
-            let current = parseInt(qtyEl.value) || 0;
-            if (current < 1000) {
-                qtyEl.value = current + 1;
-            }
-        });
-
-        // Minus button
-        minusBtn.addEventListener('click', () => {
-            let current = parseInt(qtyEl.value) || 1;
-            if (current > 1) {
-                qtyEl.value = current - 1;
-            }
-        });
-
-        // Prevent typing more than 1000
-        qtyEl.addEventListener('input', () => {
-            let current = parseInt(qtyEl.value) || 1;
-            if (current > 1000) {
-                qtyEl.value = 1000;
-            } else if (current < 1) {
-                qtyEl.value = 1;
-            }
-        });
-    });
-
-    // Quantity buttons (IDs only)
-    const qtyEl = document.getElementById('qty');
-    const plusBtn = document.getElementById('plus');
-    const minusBtn = document.getElementById('minus');
-
-    if (qtyEl && plusBtn && minusBtn) {
-      // Plus button
-      plusBtn.addEventListener('click', () => {
-        let current = parseInt(qtyEl.value) || 0;
-        if (current < 1000) {
-          qtyEl.value = current + 1;
-        }
-      });
-
-      // Minus button
-      minusBtn.addEventListener('click', () => {
-        let current = parseInt(qtyEl.value) || 1;
-        if (current > 1) {
-          qtyEl.value = current - 1;
-        }
-      });
-
-      // Restrict manual typing
-      qtyEl.addEventListener('input', () => {
-        let val = parseInt(qtyEl.value) || 1;
-        if (val > 1000) val = 1000;
-        if (val < 1) val = 1;
-        qtyEl.value = val;
-      });
-    }
-
 
     // application modal
     const openButtons = document.querySelectorAll('.open-modal-btn');
@@ -714,3 +650,72 @@ document.querySelectorAll('.catalog_item').forEach((item, index) => {
     }
 
 });
+
+
+
+// Plus va minus buttonlar tashqariga chiqarildi
+// Quantity buttons
+// document.querySelectorAll('.catalog_item').forEach(item => {
+//     const qtyEl = item.querySelector('.qty');
+//     const plusBtn = item.querySelector('.plus');
+//     const minusBtn = item.querySelector('.minus');
+//
+//     // Plus button
+//     plusBtn.addEventListener('click', () => {
+//         let current = parseInt(qtyEl.value) || 0;
+//         if (current < 1000) {
+//             qtyEl.value = current + 1;
+//         }
+//     });
+//
+//     // Minus button
+//     minusBtn.addEventListener('click', () => {
+//         let current = parseInt(qtyEl.value) || 1;
+//         if (current > 1) {
+//             qtyEl.value = current - 1;
+//         }
+//     });
+//
+//     // Prevent typing more than 1000
+//     qtyEl.addEventListener('input', () => {
+//         let current = parseInt(qtyEl.value) || 1;
+//         if (current > 1000) {
+//             qtyEl.value = 1000;
+//         } else if (current < 1) {
+//             qtyEl.value = 1;
+//         }
+//     });
+// });
+
+
+// Quantity buttons (IDs only)
+const qtyEl = document.getElementById('qty');
+const plusBtn = document.getElementById('plus');
+const minusBtn = document.getElementById('minus');
+
+if (qtyEl && plusBtn && minusBtn) {
+    // Plus button
+    plusBtn.addEventListener('click', () => {
+        console.log('Plus button clicked');
+        let current = parseInt(qtyEl.value) || 0;
+        if (current < 1000) {
+            qtyEl.value = current + 1;
+        }
+    });
+
+    // Minus button
+    minusBtn.addEventListener('click', () => {
+        let current = parseInt(qtyEl.value) || 1;
+        if (current > 1) {
+            qtyEl.value = current - 1;
+        }
+    });
+
+    // Restrict manual typing
+    qtyEl.addEventListener('input', () => {
+        let val = parseInt(qtyEl.value) || 1;
+        if (val > 1000) val = 1000;
+        if (val < 1) val = 1;
+        qtyEl.value = val;
+    });
+}
