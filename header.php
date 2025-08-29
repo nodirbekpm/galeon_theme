@@ -103,7 +103,7 @@
                                       fill="#131A23"/>
                             </svg>
                         </a>
-                        <a href="favourite.html" class="header_like header_icon_item">
+                        <a href="<?php echo esc_url( get_permalink( get_page_by_path('wishlist') ) ); ?>" class="header_like header_icon_item">
                             <span class="wishlist-count header_counter"></span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"
                                  fill="none">
@@ -111,7 +111,7 @@
                                       fill="#131A23"/>
                             </svg>
                         </a>
-                        <a href="<?php echo esc_url( wc_get_cart_url() ); ?>" class="header_basket header_icon_item">
+                        <a href="<?php echo esc_url( galeon_cart_url() ); ?>" class="header_basket header_icon_item">
                             <?php
                             $count = ( function_exists('WC') && WC()->cart ) ? WC()->cart->get_cart_contents_count() : 0;
                             ?>

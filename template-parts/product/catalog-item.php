@@ -87,9 +87,9 @@ if (empty($imgs)) {
             <input type="number"
                    name="quantity"
                    class="qty"
-                   min="<?php echo esc_attr($min); ?>"
-                   max="<?php echo esc_attr($max); ?>"
-                   value="<?php echo esc_attr($val); ?>">
+                   max="1000"
+                   min="1"
+                   value="1">
 
             <div class="qty_btn plus" data-step="1">+</div>
 

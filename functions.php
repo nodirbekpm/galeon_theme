@@ -198,7 +198,7 @@ add_action('wp_enqueue_scripts', function () {
         wp_enqueue_script('jquery');
     }
     // Wishlist JS faylingizni ulaysiz (yoki pastdagi <script>ni inline qo‘yishingiz mumkin)
-    wp_register_script('theme-wishlist', get_template_directory_uri().'/assets/js/wishlist.js', ['jquery'], null, true);
+//    wp_register_script('theme-wishlist', get_template_directory_uri().'/assets/js/wishlist.js', ['jquery'], null, true);
     wp_localize_script('theme-wishlist', 'WISHLIST', [
         'ajaxUrl'    => admin_url('admin-ajax.php'),
         'nonce'      => wp_create_nonce('wishlist_nonce'),
@@ -301,7 +301,7 @@ if ( ! function_exists('my_is_in_wishlist') ) {
 }
 
 /**
- *  Basket counter
+ *  Basket
  */
 add_filter('woocommerce_add_to_cart_fragments', function($fragments){
     ob_start();
@@ -319,8 +319,44 @@ add_filter('woocommerce_add_to_cart_fragments', function($fragments){
     return $fragments;
 });
 
+// Cart URL'ini ishonchli olish (fallbacklar bilan)
+// Barqaror Cart URL (faqat published sahifa, __trashed bo'lsa chetlanadi)
+function galeon_cart_url() {
+    // 1) Woo sozlamasidagi Cart page ID
+    if ( function_exists('wc_get_page_id') ) {
+        $cart_id = wc_get_page_id('cart');
+        if ( $cart_id && $cart_id > 0 && get_post_status($cart_id) === 'publish' ) {
+            // Published bo'lsa, bevosita permalink
+            $perma = get_permalink($cart_id);
+            if ( $perma ) return $perma;
+        }
+    }
 
+    // 2) Published bo'lgan, ichida [woocommerce_cart] bo'lgan sahifani qidiramiz
+    $q = new WP_Query([
+        'post_type'      => 'page',
+        'post_status'    => 'publish',
+        'posts_per_page' => 1,
+        's'              => '[woocommerce_cart]',
+        'no_found_rows'  => true,
+    ]);
+    if ( $q->have_posts() ) {
+        $page = $q->posts[0];
+        $url  = get_permalink($page->ID);
+        wp_reset_postdata();
+        if ( $url ) return $url;
+    }
 
+    // 3) Slug bo'yicha published sahifa (agar nomi 'cart' bo'lsa)
+    $by_path = get_page_by_path('cart', OBJECT, 'page');
+    if ( $by_path && get_post_status($by_path->ID) === 'publish' ) {
+        $u = get_permalink($by_path->ID);
+        if ( $u ) return $u;
+    }
+
+    // 4) Oxirgi fallback
+    return home_url('/cart/');
+}
 
 
 /**
@@ -644,3 +680,97 @@ function galeon_cart_clear(){
     ]);
 }
 
+
+
+
+// === WISHLIST: AJAX renderer (login va guest uchun) ===
+add_action('wp_ajax_nopriv_galeon_wishlist_render', 'galeon_wishlist_render');
+add_action('wp_ajax_galeon_wishlist_render',        'galeon_wishlist_render');
+
+function galeon_wishlist_render() {
+    // nonce
+    if ( empty($_POST['nonce']) || ! wp_verify_nonce($_POST['nonce'], 'wishlist_nonce') ) {
+        wp_send_json_error(['message' => 'Bad nonce'], 403);
+    }
+
+    // LS'dan kelgan items (guest yoki login, ikkala holatda ham yuboramiz)
+    $raw_items = [];
+    if (isset($_POST['items'])) {
+        $json     = is_array($_POST['items']) ? wp_json_encode($_POST['items']) : wp_unslash($_POST['items']);
+        $raw_items= json_decode($json, true) ?: [];
+    }
+
+    // sanitize + de-dupe
+    $seen = [];
+    $ls_items = [];
+    foreach ((array)$raw_items as $it) {
+        $pid = isset($it['pid']) ? absint($it['pid']) : 0;
+        $vid = isset($it['vid']) ? absint($it['vid']) : 0;
+        if (!$pid) continue;
+        $k = $pid . ':' . $vid;
+        if (isset($seen[$k])) continue;
+        $seen[$k] = true;
+        $ls_items[] = ['pid'=>$pid, 'vid'=>$vid, 'ts'=> isset($it['ts']) ? intval($it['ts']) : time()];
+    }
+
+    $items_to_render = [];
+
+    if ( is_user_logged_in() ) {
+        // LOGIN: LS -> user_meta MERGE, so‘ng user_meta’dan render
+        $user_id = get_current_user_id();
+        $current = get_user_meta($user_id, 'wishlist_v1', true);
+        $current = is_array($current) ? $current : [];
+
+        // birlashtirish + de-dupe
+        $all = array_merge($current, $ls_items);
+
+        // de-dupe by pid:vid
+        $seen2 = [];
+        $merged = [];
+        foreach ($all as $it) {
+            $pid = isset($it['pid']) ? absint($it['pid']) : 0;
+            $vid = isset($it['vid']) ? absint($it['vid']) : 0;
+            if (!$pid) continue;
+            $key = $pid . ':' . $vid;
+            if (isset($seen2[$key])) continue;
+            $seen2[$key] = true;
+            $merged[] = [
+                'pid' => $pid,
+                'vid' => $vid,
+                'ts'  => isset($it['ts']) ? intval($it['ts']) : time(),
+            ];
+        }
+
+        update_user_meta($user_id, 'wishlist_v1', $merged);
+        $items_to_render = $merged;
+
+    } else {
+        // GUEST: faqat LS’dan render
+        $items_to_render = $ls_items;
+    }
+
+    // HTML yig‘amiz
+    ob_start();
+    if ($items_to_render) {
+        foreach ($items_to_render as $it) {
+            $pid = $it['pid'];
+            $vid = $it['vid'];
+            $product = $vid ? wc_get_product($vid) : wc_get_product($pid);
+            if ( ! $product ) continue;
+
+            get_template_part('template-parts/product/wishlist-item', null, [
+                'product'      => $product,
+                'parent_id'    => $pid,
+                'variation_id' => $vid,
+            ]);
+        }
+    } else {
+        echo '<p class="empty">Список избранного пуст.</p>';
+    }
+    $html = ob_get_clean();
+
+    wp_send_json_success([
+        'html'  => $html,
+        'count' => count($items_to_render),
+    ]);
+}

@@ -137,6 +137,8 @@
 <!-- JS -->
 <script src="<?php echo get_template_directory_uri() ?>/assets/js/scripts.js"></script>
 
+
+<!-- Add to cart js -->
 <script>
     (function(){
         /* =========================
@@ -145,7 +147,12 @@
         document.addEventListener('click', function(e){
             const btn = e.target.closest('.add_to_cart_button');
             if (!btn) return;
-            const scope = btn.closest('.catalog_item') || btn.closest('.cart_controls') || document;
+            const scope =
+                btn.closest('.cart_controls') ||
+                btn.closest('.product_card_item') ||
+                btn.closest('.catalog_item') ||
+                document;
+
             const qtyEl = scope.querySelector('.qty') || document.querySelector('.qty');
             const qty   = Math.max(1, parseInt(qtyEl?.value || '1', 10));
             btn.setAttribute('data-quantity', String(qty));
@@ -178,7 +185,11 @@
 
             e.preventDefault();
 
-            const scope    = btn.closest('.cart_controls') || document;
+            const scope =
+                btn.closest('.cart_controls') ||
+                btn.closest('.product_card_item') || // wishlist kartasi
+                btn.closest('.catalog_item') ||      // katalog kartasi
+                document;
             const qtyEl    = scope.querySelector('.qty') || document.querySelector('.qty');
             const quantity = Math.max(1, parseInt(qtyEl?.value || '1', 10));
             const pType    = btn.dataset.product_type || 'simple';
@@ -195,17 +206,19 @@
             // Variable product bo'lsa → variations_form dagi tanlovlardan variation_id + attributes ni yig'amiz
             const fd = new FormData();
             if (pType === 'variable') {
-                const vForm = document.querySelector('form.variations_form') || scope.querySelector('form.variations_form');
+                const vForm = scope.querySelector('form.variations_form') || document.querySelector('form.variations_form');
                 const varId = vForm?.querySelector('input[name="variation_id"]')?.value;
-                const attrs = vForm ? vForm.querySelectorAll('[name^="attribute_"]') : [];
                 if (!varId || varId === '0') {
+                    if (btn.dataset.product_url) { window.location.href = btn.dataset.product_url; return; }
                     if (window.Swal) Swal.fire({icon:'warning', title:'Выберите вариант', showConfirmButton:false, timer:1200});
-                    vForm?.scrollIntoView({behavior:'smooth', block:'center'});
                     return;
                 }
                 fd.append('variation_id', varId);
-                attrs.forEach(el => { if (el.name && el.value) fd.append(el.name, el.value); });
+                (vForm ? vForm.querySelectorAll('[name^="attribute_"]') : []).forEach(el => {
+                    if (el.name && el.value) fd.append(el.name, el.value);
+                });
             }
+
 
             // AJAX endpoint
             let ajaxUrl = null;
@@ -378,24 +391,36 @@
             if (btn.dataset.wlBusy === '1') return;
             btn.dataset.wlBusy = '1';
 
-            const pid = btn.dataset.product_id;
+            const pid   = btn.dataset.product_id;
             const ptype = btn.dataset.product_type || 'simple';
-            const vid = (ptype === 'variable') ? (btn.dataset.variation_id || 0) : 0;
+            const vid   = (ptype === 'variable') ? (btn.dataset.variation_id || 0) : 0;
             if (!pid) { btn.dataset.wlBusy = '0'; return; }
 
             try {
                 if (LOGGED) {
                     const data = await serverToggle(pid, vid);
-                    btn.classList.toggle('active', data.status === 'added');
+                    const added = (data.status === 'added');
+                    btn.classList.toggle('active', added);
                     setWishlistCount(data.count);
-                    toast(data.status === 'added' ? 'info' : 'warning', data.status === 'added' ? 'Товар добавлен в избранное!' : 'Удалено из избранного');
+                    toast(added ? 'info' : 'warning', added ? 'Товар добавлен в избранное!' : 'Удалено из избранного');
                 } else {
                     const {status, count, list} = lsToggle(pid, vid);
-                    btn.classList.toggle('active', status === 'added');
+                    const added = (status === 'added');
+                    btn.classList.toggle('active', added);
                     setHeartStateFromList(list);
-                    toast(status === 'added' ? 'info' : 'warning', status === 'added' ? 'Товар добавлен в избранное!' : 'Удалено из избранного');
+                    toast(added ? 'info' : 'warning', added ? 'Товар добавлен в избранное!' : 'Удалено из избранного');
                 }
-            } catch(err){
+
+                // WISHLIST sahifasida turib unlike qilingan bo‘lsa — kartani darhol olib tashlaymiz
+                const wlList = document.getElementById('wl_list');
+                if (wlList && !btn.classList.contains('active')) {
+                    const card = btn.closest('.product_card_item');
+                    if (card) card.remove();
+                    if (!wlList.querySelector('.product_card_item')) {
+                        wlList.innerHTML = '<p class="empty">Список избранного пуст.</p>';
+                    }
+                }
+            } catch (err) {
                 toast('error','Не удалось обновить избранное');
             } finally {
                 btn.dataset.wlBusy = '0';
@@ -404,160 +429,247 @@
     })();
 </script>
 
+<!-- Add to like -->
+<!--<script>-->
+<!--    (function(){-->
+<!--        const LS_KEY = 'wishlist_v1';-->
+<!---->
+<!--        // AJAX sozlamalari-->
+<!--        const A = window.WISHLIST || {};-->
+<!--        const AJAX_URL = A.ajaxUrl || (window.ajaxurl || '/wp-admin/admin-ajax.php');-->
+<!--        const NONCE    = A.nonce || '';-->
+<!--        const LOGGED   = !!A.isLoggedIn;-->
+<!---->
+<!--        // LocalStorage helpers-->
+<!--        const readLS = () => { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(e){ return []; } };-->
+<!--        const writeLS = (arr) => localStorage.setItem(LS_KEY, JSON.stringify(arr));-->
+<!--        const keyOf = (pid, vid) => `${pid}:${vid||0}`;-->
+<!---->
+<!--        const lsToggle = (pid, vid=0) => {-->
+<!--            let list = readLS();-->
+<!--            const k = keyOf(pid, vid);-->
+<!--            const idx = list.findIndex(it => `${it.pid}:${it.vid||0}` === k);-->
+<!--            let status;-->
+<!--            if (idx >= 0) { list.splice(idx,1); status='removed'; }-->
+<!--            else { list.push({pid: Number(pid), vid: Number(vid||0), ts: Date.now()}); status='added'; }-->
+<!--            writeLS(list);-->
+<!--            return {status, count:list.length};-->
+<!--        };-->
+<!---->
+<!--        const serverToggle = async (pid, vid=0) => {-->
+<!--            const fd = new FormData();-->
+<!--            fd.append('action','my_wishlist_toggle');-->
+<!--            fd.append('nonce', NONCE);-->
+<!--            fd.append('pid', pid);-->
+<!--            fd.append('vid', vid);-->
+<!--            const res  = await fetch(AJAX_URL, { method:'POST', credentials:'same-origin', body:fd });-->
+<!--            const json = await res.json().catch(()=>null);-->
+<!--            if (!res.ok || !json || !json.success) throw new Error(json?.data?.message || 'Server error');-->
+<!--            return json.data; // {status, count}-->
+<!--        };-->
+<!---->
+<!--        const serverMerge = async (items) => {-->
+<!--            const fd = new FormData();-->
+<!--            fd.append('action','my_wishlist_merge');-->
+<!--            fd.append('nonce', NONCE);-->
+<!--            fd.append('items', JSON.stringify(items));-->
+<!--            const res  = await fetch(AJAX_URL, { method:'POST', credentials:'same-origin', body:fd });-->
+<!--            const json = await res.json().catch(()=>null);-->
+<!--            if (!res.ok || !json || !json.success) throw new Error('Merge failed');-->
+<!--            return json.data; // {count}-->
+<!--        };-->
+<!---->
+<!--        const serverList = async () => {-->
+<!--            const fd = new FormData();-->
+<!--            fd.append('action','my_wishlist_list');-->
+<!--            fd.append('nonce', NONCE);-->
+<!--            const res  = await fetch(AJAX_URL, { method:'POST', credentials:'same-origin', body:fd });-->
+<!--            const json = await res.json().catch(()=>null);-->
+<!--            if (!res.ok || !json || !json.success) return [];-->
+<!--            return json.data.items || [];-->
+<!--        };-->
+<!---->
+<!--        // UI: like holatini set qilish (ENDI 'active' class bilan)-->
+<!--        const setHeartStateFromList = (items) => {-->
+<!--            const keys = new Set(items.map(it => keyOf(it.pid, it.vid||0)));-->
+<!--            document.querySelectorAll('.like_icon').forEach(el => {-->
+<!--                const pid = el.dataset.product_id;-->
+<!--                const vid = el.dataset.variation_id || 0;-->
+<!--                if (!pid) return;-->
+<!--                const active = keys.has(keyOf(pid, vid));-->
+<!--                el.classList.toggle('active', active);-->
+<!--            });-->
+<!--            const countEl = document.querySelector('.wishlist-count');-->
+<!--            if (countEl) countEl.textContent = String(keys.size);-->
+<!--        };-->
+<!--        const setHeartStateFromLS = () => setHeartStateFromList(readLS());-->
+<!---->
+<!--        // Swal (bitta, throttled)-->
+<!--        let lastToastAt = 0;-->
+<!--        const toast = (type, title) => {-->
+<!--            if (!window.Swal) return;-->
+<!--            const now = Date.now();-->
+<!--            if (now - lastToastAt < 350) return; // 2x chiqmasin-->
+<!--            lastToastAt = now;-->
+<!--            Swal.fire({ icon: type, title, timer: 1000, showConfirmButton: false });-->
+<!--        };-->
+<!---->
+<!--        // Login bo‘lsa: localStorage → server MERGE (faqat bir marta), so'ng holatni chizish-->
+<!--        document.addEventListener('DOMContentLoaded', async () => {-->
+<!--            try {-->
+<!--                if (LOGGED) {-->
+<!--                    const ls = readLS();-->
+<!--                    if (ls.length) { await serverMerge(ls); writeLS([]); }-->
+<!--                    const sv = await serverList();-->
+<!--                    setHeartStateFromList(sv);-->
+<!--                } else {-->
+<!--                    setHeartStateFromLS();-->
+<!--                }-->
+<!--            } catch(e){ /* ignore */ }-->
+<!--        });-->
+<!---->
+<!--        // Variable product: variant tanlanganda variation_id ni yozib boramiz-->
+<!--        document.addEventListener('change', (e) => {-->
+<!--            const form = e.target.closest('form.variations_form');-->
+<!--            if (!form) return;-->
+<!--            const varId = form.querySelector('input[name="variation_id"]')?.value;-->
+<!--            document.querySelectorAll('.like_icon[data-product_type="variable"]').forEach(el => {-->
+<!--                if (varId && varId !== '0') el.dataset.variation_id = varId;-->
+<!--                else delete el.dataset.variation_id;-->
+<!--            });-->
+<!--        });-->
+<!---->
+<!--        // LIKE toggle — CAPTURING fazada: boshqa eski handlerlar ishlamasin (2x Swal muammosi yo'q)-->
+<!--        document.addEventListener('click', async (e) => {-->
+<!--            const btn = e.target.closest('.like_icon');-->
+<!--            if (!btn) return;-->
+<!---->
+<!--            // boshqa listenerlar ishlamasin:-->
+<!--            e.preventDefault();-->
+<!--            e.stopPropagation();-->
+<!--            if (e.stopImmediatePropagation) e.stopImmediatePropagation();-->
+<!---->
+<!--            // double-click guard-->
+<!--            if (btn.dataset.wlBusy === '1') return;-->
+<!--            btn.dataset.wlBusy = '1';-->
+<!---->
+<!--            const pid = btn.dataset.product_id;-->
+<!--            const ptype = btn.dataset.product_type || 'simple';-->
+<!--            const vid = (ptype === 'variable') ? (btn.dataset.variation_id || 0) : 0;-->
+<!--            if (!pid) { btn.dataset.wlBusy = '0'; return; }-->
+<!---->
+<!--            try {-->
+<!--                if (LOGGED) {-->
+<!--                    const data = await serverToggle(pid, vid);-->
+<!--                    const willBeActive = (data.status === 'added');-->
+<!--                    btn.classList.toggle('active', willBeActive);-->
+<!--                    const countEl = document.querySelector('.wishlist-count');-->
+<!--                    if (countEl) countEl.textContent = String(data.count);-->
+<!--                    toast(willBeActive ? 'info' : 'warning', willBeActive ? 'Товар добавлен в избранное!' : 'Удалено из избранного');-->
+<!--                } else {-->
+<!--                    const {status, count} = lsToggle(pid, vid);-->
+<!--                    btn.classList.toggle('active', status === 'added');-->
+<!--                    const countEl = document.querySelector('.wishlist-count');-->
+<!--                    if (countEl) countEl.textContent = String(count);-->
+<!--                    toast(status === 'added' ? 'info' : 'warning', status === 'added' ? 'Товар добавлен в избранное!' : 'Удалено из избранного');-->
+<!--                }-->
+<!--            } catch(err){-->
+<!--                toast('error','Не удалось обновить избранное');-->
+<!--            } finally {-->
+<!--                btn.dataset.wlBusy = '0';-->
+<!--            }-->
+<!--        }, true); // <<< capturing = true-->
+<!--    })();-->
+<!---->
+<!---->
+<!--</script>-->
 
+
+
+<!-- plus and minus -->
+<!-- plus and minus (UNIVERSAL & CONFLICT-PROOF) -->
 <script>
     (function(){
-        const LS_KEY = 'wishlist_v1';
+        // Hamma sahifa va dinamik (AJAX) kontentda ishlasin
+        const clamp = (v, mn, mx) => Math.max(mn, Math.min(mx, v));
 
-        // AJAX sozlamalari
-        const A = window.WISHLIST || {};
-        const AJAX_URL = A.ajaxUrl || (window.ajaxurl || '/wp-admin/admin-ajax.php');
-        const NONCE    = A.nonce || '';
-        const LOGGED   = !!A.isLoggedIn;
+        function findQtyInput(start){
+            // .catalog_item (archive), .quantity (single), .cart_controls — hammasini qamrab olamiz
+            const scope = start.closest('.cart_controls, .quantity, .product_card_item, .catalog_item') || document;
+            return scope.querySelector('input.qty, input[name="quantity"][type="number"]');
+        }
 
-        // LocalStorage helpers
-        const readLS = () => { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(e){ return []; } };
-        const writeLS = (arr) => localStorage.setItem(LS_KEY, JSON.stringify(arr));
-        const keyOf = (pid, vid) => `${pid}:${vid||0}`;
+        function stepFor(btn, input){
+            // 1) .qty_btn data-step -> 2) input.step -> 3) default ±1
+            const ds = parseInt(btn.dataset.step || btn.getAttribute('data-step') || '0', 10);
+            if (!isNaN(ds) && ds !== 0) return ds;
+            const st = parseInt(input.step || '1', 10);
+            const base = (!isNaN(st) && st > 0) ? st : 1;
+            return btn.classList.contains('plus') ? base : -base;
+        }
 
-        const lsToggle = (pid, vid=0) => {
-            let list = readLS();
-            const k = keyOf(pid, vid);
-            const idx = list.findIndex(it => `${it.pid}:${it.vid||0}` === k);
-            let status;
-            if (idx >= 0) { list.splice(idx,1); status='removed'; }
-            else { list.push({pid: Number(pid), vid: Number(vid||0), ts: Date.now()}); status='added'; }
-            writeLS(list);
-            return {status, count:list.length};
-        };
+        function setQty(input, nextVal){
+            const min = parseInt(input.min || '1', 10) || 1;
+            const max = parseInt(input.max || '1000', 10) || 1000;
+            const target = clamp(nextVal, min, max);
+            input.value = String(target);
+            // Boshqa skriptlar kuzatishi uchun
+            input.dispatchEvent(new Event('input',  {bubbles:true}));
+            input.dispatchEvent(new Event('change', {bubbles:true}));
+        }
 
-        const serverToggle = async (pid, vid=0) => {
-            const fd = new FormData();
-            fd.append('action','my_wishlist_toggle');
-            fd.append('nonce', NONCE);
-            fd.append('pid', pid);
-            fd.append('vid', vid);
-            const res  = await fetch(AJAX_URL, { method:'POST', credentials:'same-origin', body:fd });
-            const json = await res.json().catch(()=>null);
-            if (!res.ok || !json || !json.success) throw new Error(json?.data?.message || 'Server error');
-            return json.data; // {status, count}
-        };
-
-        const serverMerge = async (items) => {
-            const fd = new FormData();
-            fd.append('action','my_wishlist_merge');
-            fd.append('nonce', NONCE);
-            fd.append('items', JSON.stringify(items));
-            const res  = await fetch(AJAX_URL, { method:'POST', credentials:'same-origin', body:fd });
-            const json = await res.json().catch(()=>null);
-            if (!res.ok || !json || !json.success) throw new Error('Merge failed');
-            return json.data; // {count}
-        };
-
-        const serverList = async () => {
-            const fd = new FormData();
-            fd.append('action','my_wishlist_list');
-            fd.append('nonce', NONCE);
-            const res  = await fetch(AJAX_URL, { method:'POST', credentials:'same-origin', body:fd });
-            const json = await res.json().catch(()=>null);
-            if (!res.ok || !json || !json.success) return [];
-            return json.data.items || [];
-        };
-
-        // UI: like holatini set qilish (ENDI 'active' class bilan)
-        const setHeartStateFromList = (items) => {
-            const keys = new Set(items.map(it => keyOf(it.pid, it.vid||0)));
-            document.querySelectorAll('.like_icon').forEach(el => {
-                const pid = el.dataset.product_id;
-                const vid = el.dataset.variation_id || 0;
-                if (!pid) return;
-                const active = keys.has(keyOf(pid, vid));
-                el.classList.toggle('active', active);
-            });
-            const countEl = document.querySelector('.wishlist-count');
-            if (countEl) countEl.textContent = String(keys.size);
-        };
-        const setHeartStateFromLS = () => setHeartStateFromList(readLS());
-
-        // Swal (bitta, throttled)
-        let lastToastAt = 0;
-        const toast = (type, title) => {
-            if (!window.Swal) return;
+        // Bir klikda 2 marta ishlashini oldini oladigan guard (capture+bubble holatida ham)
+        function recentlyHandled(el){
             const now = Date.now();
-            if (now - lastToastAt < 350) return; // 2x chiqmasin
-            lastToastAt = now;
-            Swal.fire({ icon: type, title, timer: 1000, showConfirmButton: false });
-        };
+            const last = parseInt(el.dataset._qHandled || '0', 10);
+            if (now - last < 120) return true;
+            el.dataset._qHandled = String(now);
+            return false;
+        }
 
-        // Login bo‘lsa: localStorage → server MERGE (faqat bir marta), so'ng holatni chizish
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                if (LOGGED) {
-                    const ls = readLS();
-                    if (ls.length) { await serverMerge(ls); writeLS([]); }
-                    const sv = await serverList();
-                    setHeartStateFromList(sv);
-                } else {
-                    setHeartStateFromLS();
-                }
-            } catch(e){ /* ignore */ }
-        });
-
-        // Variable product: variant tanlanganda variation_id ni yozib boramiz
-        document.addEventListener('change', (e) => {
-            const form = e.target.closest('form.variations_form');
-            if (!form) return;
-            const varId = form.querySelector('input[name="variation_id"]')?.value;
-            document.querySelectorAll('.like_icon[data-product_type="variable"]').forEach(el => {
-                if (varId && varId !== '0') el.dataset.variation_id = varId;
-                else delete el.dataset.variation_id;
-            });
-        });
-
-        // LIKE toggle — CAPTURING fazada: boshqa eski handlerlar ishlamasin (2x Swal muammosi yo'q)
-        document.addEventListener('click', async (e) => {
-            const btn = e.target.closest('.like_icon');
+        function onQtyClick(ev){
+            const btn = ev.target.closest('.qty_btn');
+            console.log('SALOM')
             if (!btn) return;
 
-            // boshqa listenerlar ishlamasin:
-            e.preventDefault();
-            e.stopPropagation();
-            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+            // Faqat plus/minus bo'lsin
+            if (!btn.classList.contains('plus') && !btn.classList.contains('minus')) return;
 
-            // double-click guard
-            if (btn.dataset.wlBusy === '1') return;
-            btn.dataset.wlBusy = '1';
+            // Dublikatni bloklaymiz (ba'zi mavzular capture+bubble’da ikkita listener qo‘yar)
+            if (recentlyHandled(btn)) return;
 
-            const pid = btn.dataset.product_id;
-            const ptype = btn.dataset.product_type || 'simple';
-            const vid = (ptype === 'variable') ? (btn.dataset.variation_id || 0) : 0;
-            if (!pid) { btn.dataset.wlBusy = '0'; return; }
+            const input = findQtyInput(btn);
+            if (!input) return;
 
-            try {
-                if (LOGGED) {
-                    const data = await serverToggle(pid, vid);
-                    const willBeActive = (data.status === 'added');
-                    btn.classList.toggle('active', willBeActive);
-                    const countEl = document.querySelector('.wishlist-count');
-                    if (countEl) countEl.textContent = String(data.count);
-                    toast(willBeActive ? 'info' : 'warning', willBeActive ? 'Товар добавлен в избранное!' : 'Удалено из избранного');
-                } else {
-                    const {status, count} = lsToggle(pid, vid);
-                    btn.classList.toggle('active', status === 'added');
-                    const countEl = document.querySelector('.wishlist-count');
-                    if (countEl) countEl.textContent = String(count);
-                    toast(status === 'added' ? 'info' : 'warning', status === 'added' ? 'Товар добавлен в избранное!' : 'Удалено из избранного');
-                }
-            } catch(err){
-                toast('error','Не удалось обновить избранное');
-            } finally {
-                btn.dataset.wlBusy = '0';
-            }
-        }, true); // <<< capturing = true
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            const cur = parseInt(input.value || input.getAttribute('value') || '1', 10);
+            const base = isNaN(cur) ? 1 : cur;
+            const delta = stepFor(btn, input);
+            setQty(input, base + delta);
+        }
+
+        // Har ehtimolga – capture HAM, bubble HAM (konflikt bo‘lsa ham ishlasin)
+        document.addEventListener('click', onQtyClick, true);
+        document.addEventListener('click', onQtyClick, false);
+
+        // Manual kiritish — min/max ichida ushlab turamiz
+        document.addEventListener('input', function(ev){
+            const input = ev.target.closest('input.qty, input[name="quantity"][type="number"]');
+            if (!input) return;
+            const min = parseInt(input.min || '1',10) || 1;
+            const max = parseInt(input.max || '1000',10) || 1000;
+            let v = parseInt(input.value || '0', 10);
+            if (isNaN(v)) v = min;
+            input.value = String(clamp(v, min, max));
+        });
     })();
-
-
 </script>
+
+
+
+
 
 
 
