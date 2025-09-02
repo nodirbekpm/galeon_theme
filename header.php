@@ -17,6 +17,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css"
           integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ=="
           crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <!-- Google Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!-- Font -->
     <link rel="stylesheet" href="<?php echo get_template_directory_uri() ?>/assets/fonts/font.css">
 
@@ -96,7 +98,7 @@
                     </form>
 
                     <div class="header_icons">
-                        <a href="" class="header_user header_icon_item">
+                        <a href="<?php echo esc_url( galeon_myaccount_url('register') ); ?>" class="header_user header_icon_item">
                             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"
                                  fill="none">
                                 <path d="M19.6246 15.875C22.8746 13.375 23.4996 8.625 20.8746 5.375C18.2496 2.125 13.6246 1.5 10.3746 4.125C7.12461 6.75 6.49961 11.375 9.12461 14.625C9.49961 15.125 9.87461 15.5 10.3746 15.875C6.12461 17.625 3.12461 21.5 2.62461 26.125C2.49961 26.875 2.99961 27.375 3.74961 27.5C4.49961 27.625 4.99961 27.125 5.12461 26.375C5.74961 20.875 10.7496 16.875 16.1246 17.5C20.7496 18 24.3746 21.625 24.9996 26.375C25.1246 27 25.6246 27.5 26.2496 27.5H26.3746C26.9996 27.375 27.4996 26.75 27.4996 26.125C26.8746 21.5 23.8746 17.625 19.6246 15.875ZM14.9996 15C12.2496 15 9.99961 12.75 9.99961 10C9.99961 7.25 12.2496 5 14.9996 5C17.7496 5 19.9996 7.25 19.9996 10C19.9996 12.75 17.7496 15 14.9996 15Z"

@@ -719,3 +719,98 @@ if (qtyEl && plusBtn && minusBtn) {
         qtyEl.value = val;
     });
 }
+
+
+
+
+// profile password show/off
+document.querySelectorAll(".toggle-password").forEach(icon => {
+    // check class before running
+    if (icon.classList.contains("toggle-password")) {
+        icon.addEventListener("click", () => {
+            const input = icon.previousElementSibling;
+            if (input && input.classList.contains("password-input")) {
+                if (input.type === "password") {
+                    input.type = "text";
+                    icon.textContent = "visibility"; // open eye
+                } else {
+                    input.type = "password";
+                    icon.textContent = "visibility_off"; // crossed eye
+                }
+            }
+        });
+    }
+});
+
+
+// login/register (all modals related to the profile)
+
+
+// Open modal
+document.querySelectorAll('.open-modal-btn-profile').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const modalId = btn.getAttribute('data-modal');
+        const modal = document.getElementById(modalId);
+
+
+        if (modal) {
+            // Close any already open modals
+            document.querySelectorAll('.modal-overlay-profile.active')
+                .forEach(openModal => openModal.classList.remove('active'));
+
+
+            // Open the selected modal
+            modal.classList.add('active');
+        }
+    });
+});
+
+
+// Close modal (X button)
+document.querySelectorAll('.modal-overlay-profile .close-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const modal = btn.closest('.modal-overlay-profile');
+        modal.classList.remove('active');
+    });
+});
+
+
+// Close modal when clicking outside modal box
+document.querySelectorAll('.modal-overlay-profile').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.classList.remove('active');
+        }
+    });
+});
+
+
+
+
+
+
+window.openTab = function(tabName, el) {
+    // Find the closest modal overlay (so we only affect that modal)
+    const modal = el.closest('.modal-overlay-profile');
+
+
+    if (!modal) return;
+
+
+    // remove active from tab items, blogs, and forms inside this modal only
+    modal.querySelectorAll('.tab_item').forEach(item => {
+        item.classList.remove('active');
+    });
+    modal.querySelectorAll('.tab_blog').forEach(blog => {
+        blog.classList.remove('active');
+    });
+    modal.querySelectorAll('.form_item').forEach(form => {
+        form.classList.remove('active');
+    });
+
+
+    // activate the selected tab, blog, and form inside this modal
+    modal.querySelector('.tab_item.' + tabName).classList.add('active');
+    modal.querySelector('.' + tabName + '_blog').classList.add('active');
+    modal.querySelector('.form-' + tabName).classList.add('active');
+};
