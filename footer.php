@@ -65,6 +65,13 @@
     </div>
 </footer>
 
+<button class="open-modal-btn-profile" data-modal="modal1">Open Modal 1</button>
+<button class="open-modal-btn-profile" data-modal="modal2">Open Modal 2</button>
+<button class="open-modal-btn-profile" data-modal="modal3">Open Modal 3</button>
+<button class="open-modal-btn-profile" data-modal="modal4">Open Modal 4</button>
+<button class="open-modal-btn-profile" data-modal="modal5">Open Modal 5</button>
+<button class="open-modal-btn-profile" data-modal="modal6">Open Modal 6</button>
+
 </div>
 
 <!-- Cookie Modal -->
@@ -121,6 +128,76 @@
         </form>
     </div>
 </div>
+
+
+<!-- login/register modal -->
+<div class="modal-overlay-profile" id="modal1">
+    <div class="modal" id="modalBox2">
+        <button class="close-btn" id="profileModalClose"><img src="<?php echo get_template_directory_uri() ?>/assets/images/modal_close_icon.svg" alt=""></button>
+
+        <div class="login_blog tab_blog active">
+            <div class="section_title">Вход в личный кабинет</div>
+            <div class="sub_title">
+                Введите ваш логин и пароль для входа
+            </div>
+        </div>
+
+        <div class="register_blog tab_blog">
+            <div class="section_title">Регистрация</div>
+            <div class="sub_title">
+                Пожалуйста, заполните необходимые поля
+            </div>
+        </div>
+
+        <div class="tab_buttons">
+            <div class="tab_item login active" onclick="openTab('login',this)">Войти</div>
+            <div class="tab_item register" onclick="openTab('register',this)">Регистрация</div>
+        </div>
+
+        <form action="" class="form-register form_item" id="form-register">
+            <input type="text" required placeholder="Имя">
+            <input type="email" required placeholder="E-mail">
+
+            <div class="password-wrapper">
+                <input required type="password" placeholder="Новый пароль" class="password-input">
+                <span class="material-icons toggle-password">visibility_off</span>
+            </div>
+
+            <div class="password-wrapper">
+                <input required type="password" placeholder="Повторите пароль" class="password-input">
+                <span class="material-icons toggle-password">visibility_off</span>
+            </div>
+
+            <button>Зарегистрироваться</button>
+
+            <div class="message">Уже есть аккаунт? <span onclick="openTab('login',this)"> Войти</span></div>
+
+            <!-- custom confirm -->
+            <div class="confirm">
+                <label class="custom-checkbox">
+                    <input required checked type="checkbox" id="confirmprofile">
+                    <span class="checkmark"></span>
+                </label>
+                <label for="confirmprofile" class="text">Нажимая на кнопку «Отправить», вы даете согласие на обработку своих <a  href="assets/documents/Personal_Data_Processing_Extended.pdf" target="_blank">персональных данных</a></label>
+            </div>
+        </form>
+
+        <form action="" class="form-login form_item active" id="form-login">
+            <input required type="email" placeholder="E-mail">
+
+            <div class="password-wrapper">
+                <input required type="password" placeholder="Пароль" class="password-input">
+                <span class="material-icons toggle-password">visibility_off</span>
+            </div>
+
+            <button>Войти</button>
+
+            <div class="message">Забыли пароль? <span class="open-modal-btn-profile" data-modal="modal2">Восстановить</span></div>
+        </form>
+    </div>
+</div>
+
+
 
 <!-- Bootstrap -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa" crossorigin="anonymous"></script>
