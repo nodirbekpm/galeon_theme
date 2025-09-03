@@ -35,6 +35,358 @@ add_action( 'after_setup_theme', 'galeon_add_woocommerce_support' );
 // WooCommerce default style'larni o'chirish
 add_filter( 'woocommerce_enqueue_styles', '__return_empty_array' );
 
+
+// 1) My Account’da ro‘yxatdan o‘tishni yoqish va parolni foydalanuvchi kiritishi
+add_filter('woocommerce_enable_myaccount_registration', '__return_true');
+add_filter('woocommerce_registration_generate_password', '__return_false');
+
+// 2) My Account URL yasovchi helper: redirect_to + ixtiyoriy "register" tab
+function galeon_myaccount_url($force_action = null)
+{
+    $base = function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : home_url('/my-account/');
+
+    if (!is_user_logged_in()) {
+        // Avval referer (qaerdan kelgan bo‘lsa), bo‘lmasa joriy URL
+        $ref = wp_get_referer();
+        $scheme = is_ssl() ? 'https://' : 'http://';
+        $current = $scheme . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+        $target = $ref ?: $current;
+
+        // My Account’ning o‘zini redirect_to qilmaymiz
+        if (strpos($target, '/my-account') === false) {
+            $base = add_query_arg('redirect_to', rawurlencode($target), $base);
+        }
+
+        // Mehmonlar uchun register tab’ini darhol ochish
+        if ($force_action === 'register') {
+            $base = add_query_arg('action', 'register', $base);
+        }
+    }
+
+    return $base;
+}
+
+// 3) Login/ro‘yxatdan o‘tishdan keyin redirect_to ni hurmat qilish
+add_filter('woocommerce_login_redirect', function ($redirect, $user) {
+    if (!empty($_REQUEST['redirect_to'])) {
+        return esc_url_raw($_REQUEST['redirect_to']);
+    }
+    return $redirect;
+}, 10, 2);
+
+add_filter('woocommerce_registration_redirect', function ($redirect) {
+    if (!empty($_REQUEST['redirect_to'])) {
+        return esc_url_raw($_REQUEST['redirect_to']);
+    }
+    return $redirect;
+}, 10);
+
+
+// (ixtiyoriy, lekin foydali) WooCommerce temaga moslashuvi
+add_action('after_setup_theme', function () {
+    add_theme_support('woocommerce');
+});
+
+/**
+ * WooCommerce CSS faqat My Account (login/registration) sahifasida ishlasin
+ */
+add_filter('woocommerce_enqueue_styles', function ($styles) {
+    // Admin panelda cheklamaymiz
+    if (is_admin()) {
+        return $styles;
+    }
+
+    // Faqat My Account sahifasida (login/register) – default WC style’larini qoldiramiz
+    if (function_exists('is_account_page') && is_account_page()) {
+        // Ba'zi temalarda $styles bo'shatib yuborilishi mumkin — fallback
+        if (empty($styles) || !is_array($styles)) {
+            $ver = defined('WC_VERSION') ? WC_VERSION : null;
+            $styles = [
+                'woocommerce-general' => [
+                    'src' => plugins_url('woocommerce/assets/css/woocommerce.css'),
+                    'deps' => [],
+                    'version' => $ver,
+                    'media' => 'all',
+                ],
+                'woocommerce-layout' => [
+                    'src' => plugins_url('woocommerce/assets/css/woocommerce-layout.css'),
+                    'deps' => [],
+                    'version' => $ver,
+                    'media' => 'all',
+                ],
+                'woocommerce-smallscreen' => [
+                    'src' => plugins_url('woocommerce/assets/css/woocommerce-smallscreen.css'),
+                    'deps' => ['woocommerce-layout'],
+                    'version' => $ver,
+                    'media' => 'only screen and (max-width: 768px)',
+                ],
+            ];
+        }
+        return $styles;
+    }
+
+    // Qolgan barcha sahifalarda WC CSS’ni o‘chirib qo‘yish
+    return [];
+}, 20);
+
+/**
+ * Zaxira: agar boshqa plagin global tarzda WC CSS’ni ulab yuborsa — My Account’dan tashqarida dequeque qilamiz
+ */
+add_action('wp_enqueue_scripts', function () {
+    if (!function_exists('is_account_page') || !is_account_page()) {
+        foreach (['woocommerce-general', 'woocommerce-layout', 'woocommerce-smallscreen'] as $h) {
+            if (wp_style_is($h, 'enqueued')) {
+                wp_dequeue_style($h);
+            }
+        }
+    }
+}, 99);
+
+
+// 1) "Last name" ni majburiy emas qilish (faqat My Account sahifasida)
+add_filter('woocommerce_save_account_details_required_fields', function($fields){
+    if (function_exists('is_account_page') && is_account_page()) {
+        unset($fields['account_last_name']); // last name endi optional
+        // Agar xohlasangiz first_name ni ham optional qiling:
+        // unset($fields['account_first_name']);
+    }
+    return $fields;
+}, 10);
+
+
+
+
+/**
+ * My Account parol xatolarini yumshatish:
+ * - "Please fill out all password fields." ni olib tashlaydi
+ * - "Please enter your current password..." / "Current password is incorrect" ni olib tashlaydi
+ * - Faqat bitta yangi parol maydoni to'ldirilsa, parolni o'zgartirishni bekor qiladi (xato chiqarmaydi)
+ */
+add_filter('woocommerce_save_account_details_errors', function( $errors, $user ){
+    // Faqat My Account sahifasi
+    if ( ! function_exists('is_account_page') || ! is_account_page() ) {
+        return $errors;
+    }
+
+    // 1-forma (Личная информация) deb aniqlash:
+    // parol formasida password_1 yoki password_2 to‘ldiriladi. Agar ikkisi ham bo‘sh bo‘lsa — bu 1-forma.
+    $pass1 = isset($_POST['password_1']) ? trim((string) $_POST['password_1']) : '';
+    $pass2 = isset($_POST['password_2']) ? trim((string) $_POST['password_2']) : '';
+    $is_password_form = ($pass1 !== '' || $pass2 !== '');
+
+    if ( $is_password_form ) {
+        // 2-forma (parolni almashtirish) — bu filtrlashni o‘tkazib yuboramiz
+        return $errors;
+    }
+
+    // 1-forma: Woo'ning parolga oid default xabarlarini tozalaymiz
+    $strip_contains = [
+        'please fill out all password fields',
+        'заполните все поля пароля',
+        'please enter your current password',
+        'введите текущий пароль',
+        'current password is incorrect',
+        'текущий пароль указан неверно',
+    ];
+    foreach ( $errors->get_error_codes() as $code ) {
+        $msgs = $errors->get_error_messages($code);
+        $keep = [];
+        foreach ( (array) $msgs as $msg ) {
+            $ml = mb_strtolower($msg);
+            $hit = false;
+            foreach ($strip_contains as $needle) {
+                if ($needle !== '' && mb_stripos($ml, $needle) !== false) { $hit = true; break; }
+            }
+            if ( ! $hit ) { $keep[] = $msg; }
+        }
+        if ( empty($keep) ) {
+            $errors->remove($code);
+        } else {
+            $errors->errors[$code] = $keep;
+        }
+    }
+
+    // Email o‘zgarganmi?
+    $old_email = isset($user->user_email) ? (string) $user->user_email : '';
+    $new_email = isset($_POST['account_email']) ? sanitize_email( wp_unslash($_POST['account_email']) ) : '';
+    $email_changed = ($new_email !== '' && strcasecmp($new_email, $old_email) !== 0);
+
+    // Email o‘zgarmagan bo‘lsa — Woo "current password" talab qilmasin
+    if ( ! $email_changed ) {
+        $_POST['password_current'] = '';
+        return $errors;
+    }
+
+    // Email o‘zgargan bo‘lsa — faqat biz kiritgan maydon talab qilinadi
+    $cur = isset($_POST['galeon_current_password']) ? (string) $_POST['galeon_current_password'] : '';
+    if ( $cur === '' ) {
+        $errors->add('galeon_current_password_required', __('Для смены e-mail введите текущий пароль.', 'galeon'));
+        return $errors;
+    }
+    if ( ! wp_check_password( $cur, $user->user_pass, $user->ID ) ) {
+        $errors->add('galeon_current_password_incorrect', __('Текущий пароль указан неверно.', 'galeon'));
+        return $errors;
+    }
+
+    return $errors;
+}, 50, 2);
+
+
+
+
+
+// Xatolarni matn bo'yicha filtrlovchi yordamchi
+if ( ! function_exists('galeon_wc_strip_error_strings') ) {
+    function galeon_wc_strip_error_strings( WP_Error $errors, array $needles ) {
+        if ( empty( $errors->errors ) ) return $errors;
+        $clean = new WP_Error();
+        foreach ( $errors->errors as $code => $messages ) {
+            foreach ( (array) $messages as $msg ) {
+                $strip = false;
+                foreach ( $needles as $needle ) {
+                    if ( $needle !== '' && stripos( $msg, $needle ) !== false ) { $strip = true; break; }
+                }
+                if ( ! $strip ) {
+                    $clean->add( $code, $msg );
+                }
+            }
+        }
+        $errors->errors     = $clean->errors;
+        $errors->error_data = $clean->error_data;
+        return $errors;
+    }
+}
+
+
+
+// My Account: joriy parolsiz parol o'rnatish (faqat login bo'lgan user uchun)
+add_action('template_redirect', function () {
+    if (!is_user_logged_in()) return;
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
+
+    if (empty($_POST['galeon_set_password'])) return; // faqat bizning forma
+    if (!isset($_POST['galeon_set_password_nonce']) || !wp_verify_nonce($_POST['galeon_set_password_nonce'], 'galeon_set_password')) {
+        wc_add_notice(__('Неверный запрос. Обновите страницу и повторите.', 'your-td'), 'error');
+        return;
+    }
+
+    $pass1 = isset($_POST['password_1']) ? trim((string) $_POST['password_1']) : '';
+    $pass2 = isset($_POST['password_2']) ? trim((string) $_POST['password_2']) : '';
+
+    if ($pass1 === '' || $pass2 === '') {
+        wc_add_notice(__('Введите и подтвердите новый пароль.', 'your-td'), 'error');
+        return;
+    }
+    if ($pass1 !== $pass2) {
+        wc_add_notice(__('Пароли не совпадают.', 'your-td'), 'error');
+        return;
+    }
+
+    $user_id = get_current_user_id();
+
+    // Parolni o'rnatamiz (bu odatda sessiyani bekor qiladi)
+    wp_set_password($pass1, $user_id);
+
+    // "temporary password" flaglarini o'chirish
+    delete_user_meta($user_id, 'default_password_nag');
+    delete_user_meta($user_id, 'wc_pending_password_reset');
+    delete_user_meta($user_id, 'wc_force_password_change');
+
+    // Foydalanuvchini qayta avtorizatsiya qilamiz
+    wp_set_current_user($user_id);
+    wp_set_auth_cookie($user_id, true);
+
+    // Woo sessiya cookie (ixtiyoriy, barqarorlik uchun)
+    if (function_exists('WC')) {
+        WC()->session->set_customer_session_cookie(true);
+    }
+
+    wc_add_notice(__('Пароль успешно обновлён.', 'your-td'), 'success');
+
+    // My Account sahifasiga qaytamiz
+    $redirect = function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : home_url('/my-account/');
+    wp_safe_redirect($redirect);
+    exit;
+});
+
+
+// My Account: foydalanuvchining o'z akkauntini o'chirish (joriy user uchun)
+add_action('template_redirect', function () {
+    if (!is_user_logged_in()) return;
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
+    if (empty($_POST['galeon_delete_account'])) return;
+
+    // Nonce tekshiruvi
+    if (
+        !isset($_POST['galeon_delete_account_nonce']) ||
+        !wp_verify_nonce($_POST['galeon_delete_account_nonce'], 'galeon_delete_account')
+    ) {
+        wc_add_notice(__('Неверный запрос. Попробуйте ещё раз.', 'your-td'), 'error');
+        wp_safe_redirect( function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : home_url('/my-account/') );
+        exit;
+    }
+
+    $user_id = get_current_user_id();
+
+    // Admin/shop-managerlarni o'chirishga ruxsat bermaymiz
+    if (user_can($user_id, 'manage_options') || user_can($user_id, 'delete_users')) {
+        wc_add_notice(__('Удаление этого аккаунта запрещено.', 'your-td'), 'error');
+        wp_safe_redirect( function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : home_url('/my-account/') );
+        exit;
+    }
+
+    // Shu so'rov uchun "o'zini o'chirish"ga vaqtincha ruxsat
+    $allow_self_delete = function($caps, $cap, $user_check_id, $args) use ($user_id) {
+        if ($cap === 'delete_user' && isset($args[0]) && (int)$args[0] === (int)$user_id) {
+            return array('read');
+        }
+        return $caps;
+    };
+
+    add_filter('map_meta_cap', $allow_self_delete, 10, 4);
+    require_once ABSPATH . 'wp-admin/includes/user.php';
+
+    $deleted = wp_delete_user($user_id); // Kontentni o'chiradi; xohlasangiz reassign ID bering
+
+    remove_filter('map_meta_cap', $allow_self_delete, 10);
+
+    if (!$deleted) {
+        wc_add_notice(__('Не удалось удалить аккаунт. Повторите попытку.', 'your-td'), 'error');
+        wp_safe_redirect( function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : home_url('/my-account/') );
+        exit;
+    }
+
+    // Sessiyani tozalash
+    if (function_exists('WC') && WC()->session) {
+        WC()->session->destroy_session();
+    }
+    wp_destroy_current_session();
+    wp_clear_auth_cookie();
+
+    // Muvaffaqiyat — bosh sahifaga, SweetAlert ko'rsatish uchun flag
+    $to = add_query_arg('account_deleted', 1, home_url('/'));
+    wp_safe_redirect($to);
+    exit;
+});
+
+
+add_action('wp_footer', function () {
+    if (!empty($_GET['account_deleted'])) : ?>
+        <script>
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Аккаунт удалён',
+                    text: 'Мы удалили ваш аккаунт и завершили сессию.',
+                    showConfirmButton: false,
+                    timer: 2200
+                });
+            }
+        </script>
+    <?php endif;
+});
+
+
 /**
  * CPT faylini ulash
  */
@@ -53,11 +405,42 @@ require get_template_directory() . '/inc/custom-post-types.php';
 /**
  * Breadcrumb
  */
-// 1) "Home" → "Главная", "Shop" → "Каталог"
+// 1) Yoast breadcrumb linklarini universal tarzda sozlash:
+//    - Home/Shop tarjima
+//    - Barcha CPT arxivlari uchun matnni labels->archives (fallback: labels->name) dan olish
 add_filter('wpseo_breadcrumb_links', function($links){
+    // CPT arxiv URL -> Label xaritasi
+    $pt_map = [];
+    $pts = get_post_types(['public' => true], 'objects');
+    foreach ($pts as $pt => $obj) {
+        if (!empty($obj->has_archive)) {
+            $url = get_post_type_archive_link($pt);
+            if ($url) {
+                $label = !empty($obj->labels->archives)
+                    ? $obj->labels->archives
+                    : (!empty($obj->labels->name) ? $obj->labels->name : $obj->label);
+                // Taqqoslash qulay bo‘lishi uchun slashes’li va slashes’siz variantlarni ham saqlaymiz
+                $pt_map[trailingslashit($url)]   = $label;
+                $pt_map[untrailingslashit($url)] = $label;
+            }
+        }
+    }
+
     foreach ($links as &$l) {
+        // Home / Shop sarlavhalarini almashtirish
         if (isset($l['text']) && $l['text'] === 'Home') { $l['text'] = 'Главная'; }
         if (isset($l['text']) && $l['text'] === 'Shop') { $l['text'] = 'Каталог'; }
+
+        // Agar bu bo‘lak CPT arxiviga tegishli bo‘lsa — labelni CPT'ning archives/name’dan o‘rnatamiz
+        if (!empty($l['url'])) {
+            $u = rtrim($l['url'], '/');
+            foreach ($pt_map as $archive_url => $label) {
+                if (rtrim($archive_url, '/') === $u) {
+                    $l['text'] = $label;
+                    break;
+                }
+            }
+        }
     }
     return $links;
 });
@@ -67,7 +450,7 @@ add_filter('wpseo_breadcrumb_separator', function($sep){
     return ' <span>/</span> ';
 });
 
-// 3) Oxirgi bo‘lagini <a class="active"> qilish
+// 3) Oxirgi bo‘lakni <a class="active"> qilish
 add_filter('wpseo_breadcrumb_single_link', function($link_output, $link){
     // Yoast oxirgi bo‘lakka 'breadcrumb_last' classli <span> beradi — uni <a class="active"> ga almashtiramiz
     if (strpos($link_output, 'breadcrumb_last') !== false) {
@@ -86,6 +469,7 @@ add_filter('wpseo_breadcrumb_output', function($output){
     $output = preg_replace('/\s+/', ' ', $output);
     return $output;
 });
+
 
 
 /**
