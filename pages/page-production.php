@@ -115,26 +115,9 @@ $contact_hidden = get_field('contact_hidden');
                         Обсудите технические детали с нашими инженерами. Мы предложим решение, основанное на глубоком
                         понимании технологий и материалов.
                     </div>
-                    <form action="">
-                        <input type="text" placeholder="Ваше Имя*">
-                        <div class="input_block">
-                            <input type="tel" id="phone" placeholder="+7 999 999 99 99*">
-                        </div>
-                        <textarea name="" id="" placeholder="Комментарий"></textarea>
-                        <button>Оставить заявку</button>
-
-                        <!-- custom confirm -->
-                        <div class="confirm">
-                            <label class="custom-checkbox">
-                                <input type="checkbox" id="confirm">
-                                <span class="checkmark"></span>
-                            </label>
-                            <label for="confirm" class="text">Нажимая на кнопку «Отправить», вы даете согласие на
-                                обработку своих <a
-                                        href="<?php echo get_template_directory_uri() ?>/assets/documents/Personal_Data_Processing_Extended.pdf"
-                                        target="_blank">персональных данных</a></label>
-                        </div>
-                    </form>
+                    <?php
+                    echo do_shortcode('[contact-form-7 id="5c24369" title="Оставить заявку"]');
+                    ?>
                 </div>
             </div>
         </div>

@@ -227,6 +227,12 @@ $contact_hidden = get_field('contact_hidden');
                             $img_url = $thumb_id ? wp_get_attachment_image_url($thumb_id, 'large') : '';
                             $bg_style = $img_url ? ' style="background-image:url(' . esc_url($img_url) . ')"' : '';
 
+                            // Parent linki
+                            $cat_link = get_term_link($cat);
+                            if (is_wp_error($cat_link)) {
+                                $cat_link = '';
+                            }
+
                             $children = get_terms([
                                 'taxonomy' => 'product_cat',
                                 'parent' => $cat->term_id,
@@ -247,20 +253,28 @@ $contact_hidden = get_field('contact_hidden');
                                     <div>
                                         <div class="title"><?php echo esc_html($cat->name); ?></div>
                                         <div class="info_row">
-                                            <?php foreach ($children as $child): ?>
-                                                <a href="<?php echo esc_url($shop_url); ?>" class="info_item">
-                                                    <?php echo esc_html($child->name); ?>
-                                                </a>
+                                            <?php foreach ($children as $child):
+                                                $child_link = get_term_link($child);
+                                                if (is_wp_error($child_link)) {
+                                                    $child_link = '';
+                                                }
+                                                ?>
+                                                <?php if ($child_link) : ?>
+                                                <a href="<?php echo esc_url($child_link); ?>"
+                                                   class="info_item"><?php echo esc_html($child->name); ?></a>
+                                            <?php else : ?>
+                                                <span class="info_item"><?php echo esc_html($child->name); ?></span>
+                                            <?php endif; ?>
                                             <?php endforeach; ?>
                                         </div>
                                     </div>
-                                    <a href="<?php echo esc_url($shop_url); ?>" class="link">
+                                    <a href="<?php echo esc_url($cat_link); ?>" class="link">
                                         <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/link_arrow.svg'); ?>"
                                              alt="">
                                     </a>
                                 </div>
                             <?php } else { ?>
-                                <a href="<?php echo esc_url($shop_url); ?>"
+                                <a href="<?php echo esc_url($cat_link); ?>"
                                    class="product_item"<?php echo $bg_style; ?>>
                                     <div class="title"><?php echo esc_html($cat->name); ?></div>
                                     <div class="link">
@@ -331,26 +345,9 @@ $contact_hidden = get_field('contact_hidden');
                     <div class="sub_title">
                         Заполните форму, мы свяжемся и проконсультируем Вас в кратчайшие сроки
                     </div>
-                    <form action="">
-                        <input type="text" required placeholder="Ваше Имя*">
-                        <div class="input_block">
-                            <input required type="tel" id="phone" placeholder="+7 999 999 99 99*">
-                        </div>
-                        <textarea name="" id="" placeholder="Комментарий"></textarea>
-                        <button>Оставить заявку</button>
-
-                        <!-- custom confirm -->
-                        <div class="confirm">
-                            <label class="custom-checkbox">
-                                <input required checked type="checkbox" id="confirm">
-                                <span class="checkmark"></span>
-                            </label>
-                            <label for="confirm" class="text">Нажимая на кнопку «Отправить», вы даете согласие на
-                                обработку своих <a
-                                        href="<?php echo get_template_directory_uri() ?>/assets/documents/Personal_Data_Processing_Extended.pdf"
-                                        target="_blank">персональных данных</a></label>
-                        </div>
-                    </form>
+                    <?php
+                    echo do_shortcode('[contact-form-7 id="5c24369" title="Оставить заявку"]');
+                    ?>
                 </div>
             </div>
         </div>
