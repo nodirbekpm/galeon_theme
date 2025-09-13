@@ -26,10 +26,12 @@
         .added_to_cart.wc-forward {
             display: none !important;
         }
-        .wpcf7-response-output{
+
+        .wpcf7-response-output {
             display: none;
         }
-        .open-modal-btn{
+
+        .open-modal-btn {
             cursor: pointer;
         }
 
@@ -108,7 +110,7 @@
                         <span>Меню</span>
                     </div>
                     <style>
-                        .search_suggestions.open{
+                        .search_suggestions.open {
                             display: block;
                         }
                     </style>
@@ -124,13 +126,14 @@
                     </form>
 
                     <div class="header_icons">
-                        <!--                        <a href="--><?php //echo esc_url( galeon_myaccount_url('register') ); ?><!--" class="header_user header_icon_item">-->
-                        <?php if ( is_user_logged_in() ) : ?>
-                        <a href="<?php echo esc_url( function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : home_url('/my-account/') ); ?>" class="header_user header_icon_item">
+                        <!--                        <a href="-->
+                        <?php //echo esc_url( galeon_myaccount_url('register') ); ?><!--" class="header_user header_icon_item">-->
+                        <?php if (is_user_logged_in()) : ?>
+                        <a href="<?php echo esc_url(function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : home_url('/my-account/')); ?>"
+                           class="header_user header_icon_item">
                             <?php else : ?>
                             <a href="#" class="header_user header_icon_item open-modal-btn-profile" data-modal="modal1">
                                 <?php endif; ?>
-
 
 
                                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"
@@ -139,7 +142,8 @@
                                           fill="#131A23"/>
                                 </svg>
                             </a>
-                            <a href="<?php echo esc_url( get_permalink( get_page_by_path('wishlist') ) ); ?>" class="header_like header_icon_item">
+                            <a href="<?php echo esc_url(get_permalink(get_page_by_path('wishlist'))); ?>"
+                               class="header_like header_icon_item">
                                 <span class="wishlist-count header_counter"></span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"
                                      fill="none">
@@ -147,12 +151,12 @@
                                           fill="#131A23"/>
                                 </svg>
                             </a>
-                            <a href="<?php echo esc_url( galeon_cart_url() ); ?>" class="header_basket header_icon_item">
+                            <a href="<?php echo esc_url(galeon_cart_url()); ?>" class="header_basket header_icon_item">
                                 <?php
-                                $count = ( function_exists('WC') && WC()->cart ) ? WC()->cart->get_cart_contents_count() : 0;
+                                $count = (function_exists('WC') && WC()->cart) ? WC()->cart->get_cart_contents_count() : 0;
                                 ?>
                                 <span class="header_counter basket_counter<?php echo $count ? ' active' : ''; ?>">
-                              <?php echo (int) $count; ?>
+                              <?php echo (int)$count; ?>
                             </span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"
                                      fill="none">
@@ -206,7 +210,7 @@
 
                                                 // Parent linki
                                                 $cat_link = get_term_link($cat);
-                                                if ( is_wp_error($cat_link) ) {
+                                                if (is_wp_error($cat_link)) {
                                                     $cat_link = '';
                                                 }
 
@@ -231,9 +235,13 @@
                                                     <ul>
                                                         <?php foreach ($children as $child):
                                                             $child_link = get_term_link($child);
-                                                            if ( is_wp_error($child_link) ) { $child_link = ''; }
+                                                            if (is_wp_error($child_link)) {
+                                                                $child_link = '';
+                                                            }
                                                             ?>
-                                                            <li><a href="<?php echo esc_url($child_link); ?>"><?php echo esc_html($child->name); ?></a></li>
+                                                            <li>
+                                                                <a href="<?php echo esc_url($child_link); ?>"><?php echo esc_html($child->name); ?></a>
+                                                            </li>
                                                         <?php endforeach; ?>
                                                     </ul>
                                                 <?php } else { ?>
@@ -348,15 +356,15 @@
                                         if ($img_url) {
                                             $size = @getimagesize($img_url); // uploads ichida bo'lsa odatda ishlaydi
                                             if ($size && !empty($size[0])) {
-                                                $w60 = (int) round($size[0] * 0.6);
-                                                $bg_style = ' style="background-image:url('.esc_url($img_url).');background-size:'.$w60.'px auto;background-position:right 30px center;background-repeat:no-repeat;"';
+                                                $w60 = (int)round($size[0] * 0.6);
+                                                $bg_style = ' style="background-image:url(' . esc_url($img_url) . ');background-size:' . $w60 . 'px auto;background-position:right 30px center;background-repeat:no-repeat;"';
                                             }
                                         }
 //                                        $bg_style = $img_url ? ' style="background-size: 60% auto; background-image:url(' . esc_url($img_url) . ')"' : '';
 
                                         // Parent linki
                                         $cat_link = get_term_link($cat);
-                                        if ( is_wp_error($cat_link) ) {
+                                        if (is_wp_error($cat_link)) {
                                             $cat_link = '';
                                         }
 
@@ -382,9 +390,12 @@
                                                     <div class="info_row">
                                                         <?php foreach ($children as $child):
                                                             $child_link = get_term_link($child);
-                                                            if ( is_wp_error($child_link) ) { $child_link = ''; }
+                                                            if (is_wp_error($child_link)) {
+                                                                $child_link = '';
+                                                            }
                                                             ?>
-                                                            <a href="<?php echo esc_url($child_link); ?>" class="info_item">
+                                                            <a href="<?php echo esc_url($child_link); ?>"
+                                                               class="info_item">
                                                                 <?php echo esc_html($child->name); ?>
                                                             </a>
                                                         <?php endforeach; ?>
