@@ -5,27 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9d3b5ac7-50a4-42dd-9d43-c83025160029" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/assets/js/auth-otp.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/js/live-search.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pages/page-checkout.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pages/page-contact.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pages/page-privacy-policy.php" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plugin/modal-auth/modal-auth.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plugin/modal-auth/modal-auth.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/archive-tool.php" beforeDir="false" afterPath="$PROJECT_DIR$/archive-tool.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/css/main.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/main.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/scripts.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/scripts.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/footer.php" beforeDir="false" afterPath="$PROJECT_DIR$/footer.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/front-page.php" beforeDir="false" afterPath="$PROJECT_DIR$/front-page.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/functions.php" beforeDir="false" afterPath="$PROJECT_DIR$/functions.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/header.php" beforeDir="false" afterPath="$PROJECT_DIR$/header.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pages/page-production.php" beforeDir="false" afterPath="$PROJECT_DIR$/pages/page-production.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pages/page-wishlist.php" beforeDir="false" afterPath="$PROJECT_DIR$/pages/page-wishlist.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/template-parts/product/catalog-item.php" beforeDir="false" afterPath="$PROJECT_DIR$/template-parts/product/catalog-item.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/woocommerce/archive-product.php" beforeDir="false" afterPath="$PROJECT_DIR$/woocommerce/archive-product.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/woocommerce/myaccount/my-account.php" beforeDir="false" afterPath="$PROJECT_DIR$/woocommerce/myaccount/my-account.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/woocommerce/single-product.php" beforeDir="false" afterPath="$PROJECT_DIR$/woocommerce/single-product.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,22 +40,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/OSPanel/home/galeon.dev/public/wp-content/themes/galeon_theme/assets/images&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;settings.php.frameworks&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "dev",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/OSPanel/home/galeon.dev/public/wp-content/themes/galeon_theme/assets/images",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "settings.php.frameworks",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\OSPanel\home\galeon.dev\public\wp-content\themes\galeon_theme\assets\images" />
