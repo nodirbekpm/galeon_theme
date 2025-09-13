@@ -5,6 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="9d3b5ac7-50a4-42dd-9d43-c83025160029" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/assets/js/auth-otp.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/js/live-search.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pages/page-checkout.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pages/page-contact.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pages/page-privacy-policy.php" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/plugin/modal-auth/modal-auth.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/plugin/modal-auth/modal-auth.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/archive-tool.php" beforeDir="false" afterPath="$PROJECT_DIR$/archive-tool.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/assets/css/main.css" beforeDir="false" afterPath="$PROJECT_DIR$/assets/css/main.css" afterDir="false" />
@@ -16,7 +23,6 @@
       <change beforePath="$PROJECT_DIR$/pages/page-production.php" beforeDir="false" afterPath="$PROJECT_DIR$/pages/page-production.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pages/page-wishlist.php" beforeDir="false" afterPath="$PROJECT_DIR$/pages/page-wishlist.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/template-parts/product/catalog-item.php" beforeDir="false" afterPath="$PROJECT_DIR$/template-parts/product/catalog-item.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/template-parts/product/wishlist-item.php" beforeDir="false" afterPath="$PROJECT_DIR$/template-parts/product/wishlist-item.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/woocommerce/archive-product.php" beforeDir="false" afterPath="$PROJECT_DIR$/woocommerce/archive-product.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/woocommerce/myaccount/my-account.php" beforeDir="false" afterPath="$PROJECT_DIR$/woocommerce/myaccount/my-account.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/woocommerce/single-product.php" beforeDir="false" afterPath="$PROJECT_DIR$/woocommerce/single-product.php" afterDir="false" />
@@ -101,7 +107,7 @@
       <workItem from="1756786096668" duration="15374000" />
       <workItem from="1757315611452" duration="9362000" />
       <workItem from="1757442001622" duration="4195000" />
-      <workItem from="1757695040479" duration="5575000" />
+      <workItem from="1757695040479" duration="6296000" />
     </task>
     <servers />
   </component>
