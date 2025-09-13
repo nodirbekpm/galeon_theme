@@ -41,7 +41,7 @@ if (empty($imgs)) {
              data-product_id="<?php echo esc_attr( $product->get_id() ); ?>"
              data-product_type="<?php echo esc_attr( $product->get_type() ); ?>"></div>
 
-        <div class="swiper catalogSwiper">
+        <a href="<?php echo esc_url($permalink); ?>" class="swiper catalogSwiper">
             <div class="swiper-wrapper">
                 <?php if (isset($imgs['placeholder'])): ?>
                     <div class="swiper-slide">
@@ -56,7 +56,7 @@ if (empty($imgs)) {
                 <?php endif; ?>
             </div>
             <div class="swiper-pagination"></div>
-        </div>
+        </a>
     </div>
 
     <div class="info_block">

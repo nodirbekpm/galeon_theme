@@ -349,78 +349,78 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const minGapDefault = 1; // minimum difference between min and max
 
-  document.querySelectorAll('.filter-section').forEach(section => {
-    const inputMin = section.querySelector('.input-min');
-    const inputMax = section.querySelector('.input-max');
-    const rangeMin = section.querySelector('.range-min');
-    const rangeMax = section.querySelector('.range-max');
-    const track = section.querySelector('.slider-track');
-
-    if (!inputMin || !inputMax || !rangeMin || !rangeMax || !track) {
-      return;
-    }
-
-    const minBound = Number(rangeMin.min);
-    const maxBound = Number(rangeMin.max);
-    const step = Number(rangeMin.step) || 1;
-    const minGap = step * minGapDefault;
-
-    // keep number inputs bounds in sync with ranges
-    inputMin.min = rangeMin.min; inputMin.max = rangeMin.max;
-    inputMax.min = rangeMax.min; inputMax.max = rangeMax.max;
-
-    function updateTrack() {
-      const a = Number(rangeMin.value);
-      const b = Number(rangeMax.value);
-      const total = maxBound - minBound;
-      const left = ((a - minBound) / total) * 100;
-      const right = ((b - minBound) / total) * 100;
-      track.style.background = `linear-gradient(90deg, #e6e6e6 ${left}%, #00a0c6 ${left}%, #00a0c6 ${right}%, #e6e6e6 ${right}%)`;
-    }
-
-    function setFromInputs() {
-      let a = Number(inputMin.value) || minBound;
-      let b = Number(inputMax.value) || maxBound;
-      if (a < minBound) a = minBound;
-      if (b > maxBound) b = maxBound;
-      if (a > b - minGap) a = b - minGap;
-      if (b < a + minGap) b = a + minGap;
-      rangeMin.value = a;
-      rangeMax.value = b;
-      inputMin.value = a;
-      inputMax.value = b;
-      updateTrack();
-    }
-
-    function setFromRanges(e) {
-      let a = Number(rangeMin.value);
-      let b = Number(rangeMax.value);
-
-      // Prevent crossing
-      if (b - a < minGap) {
-        if (e.target === rangeMin) {
-          a = b - minGap;
-          rangeMin.value = a;
-        } else {
-          b = a + minGap;
-          rangeMax.value = b;
-        }
-      }
-
-      inputMin.value = a;
-      inputMax.value = b;
-      updateTrack();
-    }
-
-    // events
-    inputMin.addEventListener('input', setFromInputs);
-    inputMax.addEventListener('input', setFromInputs);
-    rangeMin.addEventListener('input', setFromRanges);
-    rangeMax.addEventListener('input', setFromRanges);
-
-    // initialize track and keep values consistent
-    setFromInputs();
-  });
+  // document.querySelectorAll('.filter-section').forEach(section => {
+  //   const inputMin = section.querySelector('.input-min');
+  //   const inputMax = section.querySelector('.input-max');
+  //   const rangeMin = section.querySelector('.range-min');
+  //   const rangeMax = section.querySelector('.range-max');
+  //   const track = section.querySelector('.slider-track');
+  //
+  //   if (!inputMin || !inputMax || !rangeMin || !rangeMax || !track) {
+  //     return;
+  //   }
+  //
+  //   const minBound = Number(rangeMin.min);
+  //   const maxBound = Number(rangeMin.max);
+  //   const step = Number(rangeMin.step) || 1;
+  //   const minGap = step * minGapDefault;
+  //
+  //   // keep number inputs bounds in sync with ranges
+  //   inputMin.min = rangeMin.min; inputMin.max = rangeMin.max;
+  //   inputMax.min = rangeMax.min; inputMax.max = rangeMax.max;
+  //
+  //   function updateTrack() {
+  //     const a = Number(rangeMin.value);
+  //     const b = Number(rangeMax.value);
+  //     const total = maxBound - minBound;
+  //     const left = ((a - minBound) / total) * 100;
+  //     const right = ((b - minBound) / total) * 100;
+  //     track.style.background = `linear-gradient(90deg, #e6e6e6 ${left}%, #00a0c6 ${left}%, #00a0c6 ${right}%, #e6e6e6 ${right}%)`;
+  //   }
+  //
+  //   function setFromInputs() {
+  //     let a = Number(inputMin.value) || minBound;
+  //     let b = Number(inputMax.value) || maxBound;
+  //     if (a < minBound) a = minBound;
+  //     if (b > maxBound) b = maxBound;
+  //     if (a > b - minGap) a = b - minGap;
+  //     if (b < a + minGap) b = a + minGap;
+  //     rangeMin.value = a;
+  //     rangeMax.value = b;
+  //     inputMin.value = a;
+  //     inputMax.value = b;
+  //     updateTrack();
+  //   }
+  //
+  //   function setFromRanges(e) {
+  //     let a = Number(rangeMin.value);
+  //     let b = Number(rangeMax.value);
+  //
+  //     // Prevent crossing
+  //     if (b - a < minGap) {
+  //       if (e.target === rangeMin) {
+  //         a = b - minGap;
+  //         rangeMin.value = a;
+  //       } else {
+  //         b = a + minGap;
+  //         rangeMax.value = b;
+  //       }
+  //     }
+  //
+  //     inputMin.value = a;
+  //     inputMax.value = b;
+  //     updateTrack();
+  //   }
+  //
+  //   // events
+  //   inputMin.addEventListener('input', setFromInputs);
+  //   inputMax.addEventListener('input', setFromInputs);
+  //   rangeMin.addEventListener('input', setFromRanges);
+  //   rangeMax.addEventListener('input', setFromRanges);
+  //
+  //   // initialize track and keep values consistent
+  //   setFromInputs();
+  // });
 
 
     const resetBtn = document.getElementById('btn-reset');
@@ -599,8 +599,14 @@ document.querySelectorAll('.catalog_item').forEach((item, index) => {
     ymaps.ready(init);
 
     function init() {
-        const officeCoords = [55.755348, 37.759533]; // Плеханова, 7
-        const warehouseCoords = [55.748838, 37.757386]; // Электродная, 13С2А
+
+        const officeCoords = (window.MAP_CFG && MAP_CFG.office)
+            ? [Number(MAP_CFG.office.lat), Number(MAP_CFG.office.lng)]
+            : [55.755348, 37.759533];
+
+        const warehouseCoords = (window.MAP_CFG && MAP_CFG.warehouse)
+            ? [Number(MAP_CFG.warehouse.lat), Number(MAP_CFG.warehouse.lng)]
+            : [55.748838, 37.757386];
 
         // Проверяем наличие #map1
         const map1Container = document.getElementById("map1");
@@ -723,66 +729,103 @@ if (qtyEl && plusBtn && minusBtn) {
 
 
 
-// profile password show/off
-document.querySelectorAll(".toggle-password").forEach(icon => {
-    // check class before running
-    if (icon.classList.contains("toggle-password")) {
-        icon.addEventListener("click", () => {
-            const input = icon.previousElementSibling;
-            if (input && input.classList.contains("password-input")) {
-                if (input.type === "password") {
-                    input.type = "text";
-                    icon.textContent = "visibility"; // open eye
-                } else {
-                    input.type = "password";
-                    icon.textContent = "visibility_off"; // crossed eye
-                }
-            }
-        });
+// // profile password show/off
+// document.querySelectorAll(".toggle-password").forEach(icon => {
+//     // check class before running
+//     if (icon.classList.contains("toggle-password")) {
+//         icon.addEventListener("click", () => {
+//             const input = icon.previousElementSibling;
+//             if (input && input.classList.contains("password-input")) {
+//                 if (input.type === "password") {
+//                     input.type = "text";
+//                     icon.textContent = "visibility"; // open eye
+//                 } else {
+//                     input.type = "password";
+//                     icon.textContent = "visibility_off"; // crossed eye
+//                 }
+//             }
+//         });
+//     }
+// });
+//
+//
+// // login/register (all modals related to the profile)
+//
+//
+// // Open modal
+// document.querySelectorAll('.open-modal-btn-profile').forEach(btn => {
+//     btn.addEventListener('click', () => {
+//         const modalId = btn.getAttribute('data-modal');
+//         const modal = document.getElementById(modalId);
+//
+//
+//         if (modal) {
+//             // Close any already open modals
+//             document.querySelectorAll('.modal-overlay-profile.active')
+//                 .forEach(openModal => openModal.classList.remove('active'));
+//
+//
+//             // Open the selected modal
+//             modal.classList.add('active');
+//         }
+//     });
+// });
+//
+//
+// // Close modal (X button)
+// document.querySelectorAll('.modal-overlay-profile .close-btn').forEach(btn => {
+//     btn.addEventListener('click', () => {
+//         const modal = btn.closest('.modal-overlay-profile');
+//         modal.classList.remove('active');
+//     });
+// });
+//
+//
+// // Close modal when clicking outside modal box
+// document.querySelectorAll('.modal-overlay-profile').forEach(overlay => {
+//     overlay.addEventListener('click', (e) => {
+//         if (e.target === overlay) {
+//             overlay.classList.remove('active');
+//         }
+//     });
+// });
+
+document.addEventListener('click', function(e){
+    const openBtn  = e.target.closest('.open-modal-btn-profile');
+    if (openBtn) {
+        const id = openBtn.getAttribute('data-modal');
+        const ov = document.getElementById(id);
+        if (ov) {
+            document.querySelectorAll('.modal-overlay-profile.active').forEach(m=>m.classList.remove('active'));
+            ov.classList.add('active');
+        }
+        e.preventDefault();
+        return;
+    }
+
+    const closeBtn = e.target.closest('.modal-overlay-profile .close-btn');
+    if (closeBtn) {
+        closeBtn.closest('.modal-overlay-profile')?.classList.remove('active');
+        return;
+    }
+
+    if (e.target.classList.contains('modal-overlay-profile')) {
+        e.target.classList.remove('active');
+        return;
+    }
+
+    // Agar parol ko‘rsatish kerak bo‘lsa (xohlamasangiz olib tashlang):
+    const tgl = e.target.closest('.toggle-password');
+    if (tgl) {
+        const inp = tgl.previousElementSibling;
+        if (inp && inp.classList.contains('password-input')) {
+            inp.type = (inp.type === 'password') ? 'text' : 'password';
+            tgl.textContent = (inp.type === 'password') ? 'visibility_off' : 'visibility';
+        }
+        return;
     }
 });
 
-
-// login/register (all modals related to the profile)
-
-
-// Open modal
-document.querySelectorAll('.open-modal-btn-profile').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const modalId = btn.getAttribute('data-modal');
-        const modal = document.getElementById(modalId);
-
-
-        if (modal) {
-            // Close any already open modals
-            document.querySelectorAll('.modal-overlay-profile.active')
-                .forEach(openModal => openModal.classList.remove('active'));
-
-
-            // Open the selected modal
-            modal.classList.add('active');
-        }
-    });
-});
-
-
-// Close modal (X button)
-document.querySelectorAll('.modal-overlay-profile .close-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const modal = btn.closest('.modal-overlay-profile');
-        modal.classList.remove('active');
-    });
-});
-
-
-// Close modal when clicking outside modal box
-document.querySelectorAll('.modal-overlay-profile').forEach(overlay => {
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            overlay.classList.remove('active');
-        }
-    });
-});
 
 
 
@@ -814,3 +857,33 @@ window.openTab = function(tabName, el) {
     modal.querySelector('.' + tabName + '_blog').classList.add('active');
     modal.querySelector('.form-' + tabName).classList.add('active');
 };
+
+
+
+// get all search blocks
+const searchBlocks = document.querySelectorAll('.header_search');
+
+searchBlocks.forEach(block => {
+    const searchInput = block.querySelector('.search_input'); // input
+    const suggestions = block.querySelector('.search_suggestions'); // dropdown
+
+    if (!searchInput || !suggestions) return; // skip if missing
+
+    searchInput.addEventListener('input', () => {
+        if (searchInput.value.trim().length > 0) {
+            suggestions.style.display = 'block';
+        } else {
+            suggestions.style.display = 'none';
+        }
+    });
+});
+
+// hide suggestions when clicking outside
+document.addEventListener('click', (e) => {
+    searchBlocks.forEach(block => {
+        if (!block.contains(e.target)) {
+            const suggestions = block.querySelector('.search_suggestions');
+            if (suggestions) suggestions.classList.remove('open');
+        }
+    });
+});

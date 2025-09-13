@@ -64,7 +64,7 @@ get_header();
                                     <?php endif; ?>
 
                                     <div class="button_container">
-                                        <div class="button open-modal-btn">Сделать заказ</div>
+                                        <div style="cursor: pointer;" class="button open-modal-btn">Сделать заказ</div>
                                     </div>
                                 </div>
 

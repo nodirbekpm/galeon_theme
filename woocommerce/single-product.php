@@ -106,7 +106,7 @@ if (!$q->have_posts()) {
                 <div class="information">
                     <div class="main_title"><?php the_title(); ?></div>
                     <div class="code">
-                        Артикул:<?php echo $product && $product->get_sku() ? esc_html($product->get_sku()) : '—'; ?></div>
+                        Артикул: <?php echo $product && $product->get_sku() ? esc_html($product->get_sku()) : '—'; ?></div>
 
                     <?php render_product_characteristics($product); ?>
 
@@ -151,7 +151,13 @@ if (!$q->have_posts()) {
                                 </a>
                             <?php endif; ?>
                         </div>
-
+                        <div class="button_container">
+                            <a class="favourite like_icon <?php echo my_is_in_wishlist( $product->get_id() ) ? 'active' : ''; ?>"
+                               data-product_id="<?php echo esc_attr( $product->get_id() ); ?>"
+                               data-product_type="<?php echo esc_attr( $product->get_type() ); ?>">
+                                <span>В избранное</span>
+                            </a>
+                        </div>
                         <input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $product->get_id() ); ?>">
                     </div>
 

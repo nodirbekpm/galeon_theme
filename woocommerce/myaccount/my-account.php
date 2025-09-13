@@ -90,7 +90,7 @@ $need_current_password = !(bool)get_user_option('default_password_nag', $current
 
 
             <div class="action_links">
-                <a href="<?php echo esc_url( wc_logout_url() ); ?>">Выйти</a>
+                <a href="<?php echo esc_url( wc_logout_url( home_url('/') ) ); ?>">Выйти</a>
                 <!-- "Удалить аккаунт" uchun backend qo'shilmaguncha # qoldiramiz -->
                 <a href="#" class="js-delete-account">Удалить аккаунт</a><!-- Yashirin delete form -->
                 <form id="galeon-delete-account-form" method="post" style="display:none">
