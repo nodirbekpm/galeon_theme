@@ -824,6 +824,43 @@ require get_template_directory() . '/inc/custom-post-types.php';
 
 
 /**
+ *  EMAIL (WP Mail SMTP orqali)
+ */
+/* ================== FROM: Galeon <no-reply@your-domain> ================== */
+// From Name (WP va Woo ham)
+add_filter('wp_mail_from_name', function ($name) {
+    return 'Галеон Кейсы';
+}, 20);
+
+add_filter('woocommerce_email_from_name', function ($name) {
+    return 'Галеон Кейсы';
+}, 20);
+
+// From Email (WP)
+add_filter('wp_mail_from', function ($email) {
+    $host = parse_url(home_url(), PHP_URL_HOST);
+    if (!$host) return $email; // fallback
+    $from = sanitize_email('no-reply@' . $host);
+    return $from ?: $email;    // agar yaroqsiz bo'lsa, mavjudini qoldiramiz
+}, 20);
+
+// From Email (Woo) — admin paneldagisini ham bosib ketadi
+add_filter('woocommerce_email_from_address', function ($address) {
+    $host = parse_url(home_url(), PHP_URL_HOST);
+    if (!$host) return $address;
+    $from = sanitize_email('no-reply@' . $host);
+    return $from ?: $address;
+}, 20);
+
+// Ba'zi serverlar Return-Path (Sender) talab qiladi — PHP mail()da muhim
+add_action('phpmailer_init', function ($phpmailer) {
+    if (!empty($phpmailer->From) && empty($phpmailer->Sender)) {
+        $phpmailer->Sender = $phpmailer->From; // Return-Path ni From ga tenglaymiz
+    }
+});
+
+
+/**
  * Breadcrumb
  */
 // 1) Yoast breadcrumb linklarini universal tarzda sozlash:
@@ -987,266 +1024,6 @@ add_action('wp_enqueue_scripts', function () {
 });
 
 
-/**
- *  lIke ajax
- */
-add_action('wp_enqueue_scripts', function () {
-    if (class_exists('WooCommerce')) {
-        wp_enqueue_script('jquery');
-    }
-    // Wishlist JS faylingizni ulaysiz (yoki pastdagi <script>ni inline qo‘yishingiz mumkin)
-//    wp_register_script('theme-wishlist', get_template_directory_uri().'/assets/js/wishlist.js', ['jquery'], null, true);
-    wp_localize_script('theme-wishlist', 'WISHLIST', [
-        'ajaxUrl' => admin_url('admin-ajax.php'),
-        'nonce' => wp_create_nonce('wishlist_nonce'),
-        'isLoggedIn' => is_user_logged_in(),
-        'userId'     => get_current_user_id(),
-    ]);
-    wp_enqueue_script('theme-wishlist');
-});
-
-// === WISHLIST HELPERS (server-side) =========================================
-if (!function_exists('galeon_get_user_wishlist_raw')) {
-    // Joriy foydalanuvchi wishlist'i (login bo'lsa)
-    function galeon_get_user_wishlist_raw() {
-        if (!is_user_logged_in()) return [];
-        $list = get_user_meta(get_current_user_id(), 'wishlist_v1', true);
-        return is_array($list) ? $list : [];
-    }
-}
-
-if (!function_exists('galeon_current_wishlist_ids')) {
-    // Qulay IDlar: "pid" yoki "pid:vid"
-    function galeon_current_wishlist_ids() {
-        if (!is_user_logged_in()) return [];
-        $ids = [];
-        foreach (galeon_get_user_wishlist_raw() as $it) {
-            $pid = absint($it['pid'] ?? 0);
-            $vid = absint($it['vid'] ?? 0);
-            if (!$pid) continue;
-            $ids[] = $vid ? ($pid . ':' . $vid) : (string)$pid;
-        }
-        return $ids;
-    }
-}
-
-if (!function_exists('my_is_in_wishlist')) {
-    function my_is_in_wishlist($product_id) {
-        static $cache = null;
-        if (!is_user_logged_in()) return false;
-
-        // ✅ Normalize qilingan ro‘yxatdan kesh tuzamiz
-        if ($cache === null) {
-            $cache = ['pids'=>[], 'vids'=>[]];
-            foreach (my_wl_user_list(get_current_user_id()) as $it) {
-                $pid = absint($it['pid']);
-                $vid = absint($it['vid']);
-                if ($pid) $cache['pids'][$pid] = true;
-                if ($vid) $cache['vids'][$vid] = true;
-            }
-        }
-
-        $pid = absint($product_id);
-        if (isset($cache['pids'][$pid]) || isset($cache['vids'][$pid])) return true;
-
-        $product = wc_get_product($pid);
-        if (!$product) return false;
-
-        // Variation -> parent wishlistdami?
-        if ($product->is_type('variation')) {
-            $parent_id = $product->get_parent_id();
-            return $parent_id && isset($cache['pids'][$parent_id]);
-        }
-
-        // Variable parent -> farzandlardan biri wishlistdami?
-        if ($product->is_type('variable')) {
-            foreach ((array)$product->get_children() as $vid) {
-                if (isset($cache['vids'][$vid])) return true;
-            }
-        }
-        return false;
-    }
-}
-
-
-if (!function_exists('my_wl_user_list')) {
-    function my_wl_user_list($user_id) {
-        $raw = get_user_meta($user_id, 'wishlist_v1', true);
-        return is_array($raw) ? $raw : [];
-    }
-}
-
-if (!function_exists('my_wl_save')) {
-    function my_wl_save($user_id, $items) {
-        $seen = [];
-        $out  = [];
-        foreach ((array)$items as $it) {
-            $pid = isset($it['pid']) ? absint($it['pid']) : 0;
-            $vid = isset($it['vid']) ? absint($it['vid']) : 0;
-            if (!$pid) continue;
-            $key = $pid . ':' . $vid;
-            if (isset($seen[$key])) continue;
-            $seen[$key] = true;
-            $out[] = [
-                'pid' => $pid,
-                'vid' => $vid,
-                'ts'  => isset($it['ts']) ? intval($it['ts']) : time(),
-            ];
-        }
-        update_user_meta($user_id, 'wishlist_v1', $out);
-        return $out;
-    }
-}
-
-/**
- * 🔧 MUHIM: PID/VID ni normallashtiramiz.
- * Agar $pid — variation post bo'lsa va $vid=0 bo'lsa:
- *   $vid = $pid  (variation_id)
- *   $pid = parent_id (asosiy product)
- */
-if (!function_exists('my_wl_normalize_pair')) {
-    function my_wl_normalize_pair($pid, $vid) {
-        $pid = absint($pid);
-        $vid = absint($vid);
-
-        if ($pid) {
-            $prod = wc_get_product($pid);
-            if ($prod && $prod->is_type('variation')) {
-                // "pid=variation, vid=0" holatini to'g'rilaymiz
-                if ($vid === 0) {
-                    $parent_id = absint($prod->get_parent_id());
-                    if ($parent_id) {
-                        $vid = $pid;      // variation_id
-                        $pid = $parent_id; // parent_id
-                    }
-                } else {
-                    // Agar noto'g'ri juftlik: pid=variation, vid=another → parentga ko'taramiz
-                    $parent_id = absint($prod->get_parent_id());
-                    if ($parent_id) {
-                        $pid = $parent_id;
-                    }
-                }
-            }
-        }
-        return [$pid, $vid];
-    }
-}
-
-if (!function_exists('my_wl_toggle')) {
-    /**
-     * Toggle (parent/child mantiq bilan)
-     * - Parent unlike → parent + barcha variatsiyalar o‘chadi
-     * - Variation unlike → o‘sha variation va parent yozuvi (bo‘lsa) o‘chadi
-     * + Normalizatsiya: pid=variation, vid=0 holatlarini to'g'rilash
-     */
-    function my_wl_toggle($user_id, $pid, $vid) {
-        // 0) Normalizatsiya (ENG MUHIM QISM)
-        list($pid, $vid) = my_wl_normalize_pair($pid, $vid);
-
-        $pid = absint($pid);
-        $vid = absint($vid);
-        if (!$pid) return ['status' => 'error', 'count' => 0];
-
-        // 1) Mavjud ro'yxatni o'qib olamiz
-        $list = my_wl_user_list($user_id);
-
-        // 2) Hozirgi holat
-        $hasExact      = false; // aniq pid:vid bor-mi
-        $hasAnyForPid  = false; // shu pid bo‘yicha istalgan yozuv bor-mi
-        $hasParentOnly = false; // pid, vid=0 yozuvi bor-mi
-
-        foreach ((array)$list as $it) {
-            $pp = absint($it['pid'] ?? 0);
-            $vv = absint($it['vid'] ?? 0);
-            if (!$pp) continue;
-
-            if ($pp === $pid) {
-                $hasAnyForPid = true;
-                if ($vv === 0) $hasParentOnly = true;
-                if ($pp === $pid && $vv === $vid) $hasExact = true;
-            }
-        }
-
-        // 3) UI’dagi “active” mantiqqa moslab:
-        $isActiveNow = ($vid === 0) ? $hasAnyForPid : ($hasExact || $hasParentOnly);
-
-        if ($isActiveNow) {
-            // REMOVE
-            if ($vid === 0) {
-                // Parent unlike → shu parentga tegishli BARCHA yozuvlarni o‘chir
-                foreach ($list as $i => $it) {
-                    if (absint($it['pid']) === $pid) unset($list[$i]);
-                }
-            } else {
-                // Variation unlike → o‘sha variationni o‘chir
-                foreach ($list as $i => $it) {
-                    if (absint($it['pid']) === $pid && absint($it['vid']) === $vid) unset($list[$i]);
-                }
-                // Va parent yozuvi bo‘lsa — uni ham o‘chir (aks holda my_is_in_wishlist true bo‘lib qoladi)
-                foreach ($list as $i => $it) {
-                    if (absint($it['pid']) === $pid && absint($it['vid']) === 0) { unset($list[$i]); break; }
-                }
-            }
-            $status = 'removed';
-        } else {
-            // ADD
-            $list[] = ['pid'=>$pid,'vid'=>$vid,'ts'=>time()];
-            $status = 'added';
-        }
-
-        // 4) Saqlash (de-dupe bilan)
-        $list = array_values($list);
-        $list = my_wl_save($user_id, $list);
-
-        // 5) Javob
-        return ['status' => $status, 'count' => count($list)];
-    }
-}
-
-// ====== AJAX ENDPOINTS =======================================================
-
-// Toggle (faqat logged-in)
-add_action('wp_ajax_my_wishlist_toggle', function () {
-    if (!is_user_logged_in()) wp_send_json_error(['message' => 'not logged in'], 401);
-    check_ajax_referer('wishlist_nonce', 'nonce');
-
-    $pid = isset($_POST['pid']) ? absint($_POST['pid']) : 0;
-    $vid = isset($_POST['vid']) ? absint($_POST['vid']) : 0;
-
-    $res = my_wl_toggle(get_current_user_id(), $pid, $vid);
-    nocache_headers();
-    wp_send_json_success($res);
-});
-
-// Merge localStorage → user_meta (faqat logged-in, bir martalik strategiya js’da)
-add_action('wp_ajax_my_wishlist_merge', function () {
-    if (!is_user_logged_in()) wp_send_json_error(['message' => 'not logged in'], 401);
-    check_ajax_referer('wishlist_nonce', 'nonce');
-
-    $items = [];
-    if (isset($_POST['items'])) {
-        $json  = is_array($_POST['items']) ? wp_json_encode($_POST['items']) : wp_unslash($_POST['items']);
-        $items = json_decode($json, true) ?: [];
-    }
-
-    $current = my_wl_user_list(get_current_user_id());
-    $all     = array_merge($current, (array)$items);
-    $saved   = my_wl_save(get_current_user_id(), $all);
-
-    nocache_headers();
-    wp_send_json_success(['count' => count($saved)]);
-});
-
-// Ro‘yxatni olish (logged-in uchun)
-add_action('wp_ajax_my_wishlist_list', function () {
-    check_ajax_referer('wishlist_nonce', 'nonce');
-    if (!is_user_logged_in()) {
-        wp_send_json_success(['items' => []]);
-    }
-    $items = my_wl_user_list(get_current_user_id());
-    nocache_headers();
-    wp_send_json_success(['items' => array_values($items)]);
-});
 /**
  *  Basket
  */
@@ -1728,44 +1505,7 @@ function galeon_search_suggest(){
 }
 
 
-// Bir xil formatga keltirib, hozirgi foydalanuvchining wishlistidagi product ID'larni qaytaradi
-if (!function_exists('galeon_current_wishlist_ids')) {
-    function galeon_current_wishlist_ids() {
-        $ids = [];
 
-        // Logged-in foydalanuvchi
-        if (is_user_logged_in()) {
-            $list = get_user_meta(get_current_user_id(), 'wishlist_v1', true);
-            if (is_array($list)) {
-                foreach ($list as $it) {
-                    if (is_array($it) && isset($it['pid'])) {
-                        $ids[] = absint($it['pid']);
-                    } elseif (is_numeric($it)) {
-                        $ids[] = absint($it);
-                    }
-                }
-            }
-        } else {
-            // Guest: agar cookie mavjud bo'lsa, undan ham o'qib ko'ramiz (ixtiyoriy)
-            if (!empty($_COOKIE['wishlist_v1'])) {
-                $cookie_raw = wp_unslash($_COOKIE['wishlist_v1']);
-                $cookie_arr = json_decode($cookie_raw, true);
-                if (is_array($cookie_arr)) {
-                    foreach ($cookie_arr as $it) {
-                        if (is_array($it) && isset($it['pid'])) {
-                            $ids[] = absint($it['pid']);
-                        } elseif (is_numeric($it)) {
-                            $ids[] = absint($it);
-                        }
-                    }
-                }
-            }
-        }
-
-        $ids = array_values(array_unique(array_filter($ids)));
-        return $ids;
-    }
-}
 
 /**
  * GLOBAL facets: barcha publish qilingan productlar bo‘yicha min/max.
@@ -1921,79 +1661,7 @@ function galeon_cart_clear()
 }
 
 
-// === WISHLIST: AJAX renderer (login va guest uchun) ===
-add_action('wp_ajax_nopriv_galeon_wishlist_render', 'galeon_wishlist_render');
-add_action('wp_ajax_galeon_wishlist_render', 'galeon_wishlist_render');
 
-function galeon_wishlist_render() {
-    // Keshlashni oldini olish
-    nocache_headers();
-
-    // nonce
-    if (empty($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'wishlist_nonce')) {
-        wp_send_json_error(['message' => 'Bad nonce'], 403);
-    }
-
-    // LS’dan kelgan items — faqat guest uchun ishlatamiz
-    $raw_items = [];
-    if (isset($_POST['items'])) {
-        $json = is_array($_POST['items']) ? wp_json_encode($_POST['items']) : wp_unslash($_POST['items']);
-        $raw_items = json_decode($json, true) ?: [];
-    }
-
-    // sanitize + de-dupe (guest holati uchun)
-    $seen = [];
-    $ls_items = [];
-    foreach ((array)$raw_items as $it) {
-        $pid = isset($it['pid']) ? absint($it['pid']) : 0;
-        $vid = isset($it['vid']) ? absint($it['vid']) : 0;
-        if (!$pid) continue;
-        $k = $pid . ':' . $vid;
-        if (isset($seen[$k])) continue;
-        $seen[$k] = true;
-        $ls_items[] = ['pid'=>$pid,'vid'=>$vid,'ts'=> isset($it['ts']) ? intval($it['ts']) : time()];
-    }
-
-    // === MUHIM TAMOYIL ===
-    // Logged-in foydalanuvchi uchun authoritative manba — faqat user_meta.
-    // Hech qachon LS bilan merge QILMAYMIZ bu yerda.
-    if (is_user_logged_in()) {
-        $user_id = get_current_user_id();
-        $items_to_render = get_user_meta($user_id, 'wishlist_v1', true);
-        $items_to_render = is_array($items_to_render) ? array_values($items_to_render) : [];
-    } else {
-        // Guest: faqat LS’dan render
-        $items_to_render = $ls_items;
-    }
-
-    // HTML yig‘amiz
-    ob_start();
-    if ($items_to_render) {
-        foreach ($items_to_render as $it) {
-            $pid = absint($it['pid']);
-            $vid = absint($it['vid']);
-            $product = $vid ? wc_get_product($vid) : wc_get_product($pid);
-            if (!$product) continue;
-
-            get_template_part('template-parts/product/wishlist-item', null, [
-                'product'      => $product,
-                'parent_id'    => $pid,
-                'variation_id' => $vid,
-            ]);
-        }
-    } else {
-        echo '<p class="empty">Список избранного пуст.</p>';
-    }
-    $html = ob_get_clean();
-    $logged_in = is_user_logged_in();
-    // Frontend LS’ni sinxronlashtirish uchun toza ro‘yxatni qaytaramiz
-    wp_send_json_success([
-        'html'  => $html,
-        'count' => count($items_to_render),
-        'logged_in'  => $logged_in ? 1 : 0,
-        'items' => array_values($items_to_render), // LS shu bilan yangilanadi
-    ]);
-}
 
 
 
@@ -2180,21 +1848,289 @@ function theme_live_product_search() {
 }
 
 
-/** ================================
- *  MODAL AUTH (AJAX + MAGIC LINKS)
- * ================================= */
-if ( ! class_exists('Theme_Modal_Auth')) {
-    class Theme_Modal_Auth {
-        const NONCE    = 'modal_auth_nonce';
-        const C_VERIFY = 'ml_email_verified';   // email verify cookie flag
-        const C_RESET  = 'ml_pw_reset_ready';   // password reset cookie flag
-        const TTL      = 900; // 15 min
+/** =========================
+ *  WISHLIST (Like) – V2
+ *  - User_meta: wishlist_v1  (array of {pid, vid, ts})
+ *  - Logged-in: server authoritative
+ *  - Guest: localStorage
+ *  - AJAX: toggle / list / merge / render
+ * ========================= */
+
+// Ixtiyoriy: serverda SSR "active" uchun kerak bo‘lsa
+if (!function_exists('my_is_in_wishlist')) {
+    function my_is_in_wishlist($product_id) {
+        if (!is_user_logged_in()) return false;
+        $pid = absint($product_id);
+        foreach (wl_user_list(get_current_user_id()) as $it) {
+            $pp = (int)($it['pid'] ?? 0);
+            $vv = (int)($it['vid'] ?? 0);
+            if ($pp === $pid || $vv === $pid) return true;
+        }
+        return false;
+    }
+}
+
+
+add_action('wp_enqueue_scripts', function () {
+    // JS faylni ro‘yxatdan o‘tkazamiz va ulaymiz
+    $handle = 'theme-wishlist';
+    $path = get_stylesheet_directory() . '/assets/js/wishlist.v2.js';
+    $ver = file_exists($path) ? filemtime($path) : null;
+
+    wp_register_script(
+        $handle,
+        get_stylesheet_directory_uri() . '/assets/js/wishlist.v2.js',
+        ['jquery'],
+        $ver,
+        true
+    );
+
+    wp_localize_script($handle, 'WISHLIST', [
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('wishlist_nonce'),
+        'isLoggedIn' => is_user_logged_in(),
+        'userId' => get_current_user_id(),
+        // ixtiyoriy: selektorlarni sozlab bo‘lishingiz uchun
+        'selectors' => [
+            'icon' => '.like_icon',
+            'count' => '.wishlist-count.header_counter',
+            'listId' => '#wl_list',
+        ],
+    ]);
+
+    wp_enqueue_script($handle);
+});
+
+/** ===== Helpers: read/save/list/normalize ===== */
+if (!function_exists('wl_user_list')) {
+    function wl_user_list($user_id)
+    {
+        $raw = get_user_meta($user_id, 'wishlist_v1', true);
+        return is_array($raw) ? $raw : [];
+    }
+}
+if (!function_exists('wl_save')) {
+    function wl_save($user_id, $items)
+    {
+        $seen = [];
+        $out = [];
+        foreach ((array)$items as $it) {
+            $pid = isset($it['pid']) ? absint($it['pid']) : 0;
+            $vid = isset($it['vid']) ? absint($it['vid']) : 0;
+            if (!$pid) continue;
+            $key = $pid . ':' . $vid;
+            if (isset($seen[$key])) continue;
+            $seen[$key] = true;
+            $out[] = [
+                'pid' => $pid,
+                'vid' => $vid,
+                'ts' => isset($it['ts']) ? intval($it['ts']) : time(),
+            ];
+        }
+        update_user_meta($user_id, 'wishlist_v1', $out);
+        return $out;
+    }
+}
+if (!function_exists('wl_normalize_pair')) {
+    function wl_normalize_pair($pid, $vid)
+    {
+        $pid = absint($pid);
+        $vid = absint($vid);
+        if ($pid) {
+            $prod = wc_get_product($pid);
+            if ($prod && $prod->is_type('variation')) {
+                if ($vid === 0) {
+                    $parent_id = absint($prod->get_parent_id());
+                    if ($parent_id) {
+                        $vid = $pid;
+                        $pid = $parent_id;
+                    }
+                } else {
+                    $parent_id = absint($prod->get_parent_id());
+                    if ($parent_id) $pid = $parent_id;
+                }
+            }
+        }
+        return [$pid, $vid];
+    }
+}
+if (!function_exists('wl_toggle')) {
+    function wl_toggle($user_id, $pid, $vid)
+    {
+        list($pid, $vid) = wl_normalize_pair($pid, $vid);
+        $pid = absint($pid);
+        $vid = absint($vid);
+        if (!$pid) return ['status' => 'error', 'count' => 0];
+
+        $list = wl_user_list($user_id);
+
+        $hasExact = false;
+        $hasAnyForPid = false;
+        $hasParentOnly = false;
+
+        foreach ($list as $it) {
+            $pp = absint($it['pid'] ?? 0);
+            $vv = absint($it['vid'] ?? 0);
+            if (!$pp) continue;
+            if ($pp === $pid) {
+                $hasAnyForPid = true;
+                if ($vv === 0) $hasParentOnly = true;
+                if ($vv === $vid) $hasExact = true;
+            }
+        }
+
+        // UI mantiqi: parent active bo‘lsa — istalgan child ham active hisob
+        $isActiveNow = ($vid === 0) ? $hasAnyForPid : ($hasExact || $hasParentOnly);
+
+        if ($isActiveNow) {
+            if ($vid === 0) {
+                // parent unlike → parent va barcha child’larni o‘chir
+                foreach ($list as $i => $it) {
+                    if (absint($it['pid']) === $pid) unset($list[$i]);
+                }
+            } else {
+                // child unlike
+                foreach ($list as $i => $it) {
+                    if (absint($it['pid']) === $pid && absint($it['vid']) === $vid) unset($list[$i]);
+                }
+                // parent yozuvi bo‘lsa o‘chir (aks holda yana active ko‘rinsa)
+                foreach ($list as $i => $it) {
+                    if (absint($it['pid']) === $pid && absint($it['vid']) === 0) {
+                        unset($list[$i]);
+                        break;
+                    }
+                }
+            }
+            $status = 'removed';
+        } else {
+            $list[] = ['pid' => $pid, 'vid' => $vid, 'ts' => time()];
+            $status = 'added';
+        }
+
+        $list = array_values($list);
+        $list = wl_save($user_id, $list);
+        return ['status' => $status, 'count' => count($list)];
+    }
+}
+
+/** ===== AJAX: toggle / list / merge ===== */
+add_action('wp_ajax_my_wishlist_toggle', function () {
+    if (!is_user_logged_in()) wp_send_json_error(['message' => 'not logged in'], 401);
+    check_ajax_referer('wishlist_nonce', 'nonce');
+
+    $pid = isset($_POST['pid']) ? absint($_POST['pid']) : 0;
+    $vid = isset($_POST['vid']) ? absint($_POST['vid']) : 0;
+
+    $res = wl_toggle(get_current_user_id(), $pid, $vid);
+    nocache_headers();
+    wp_send_json_success($res);
+});
+
+add_action('wp_ajax_my_wishlist_list', function () {
+    check_ajax_referer('wishlist_nonce', 'nonce');
+    if (!is_user_logged_in()) wp_send_json_success(['items' => []]);
+    $items = wl_user_list(get_current_user_id());
+    nocache_headers();
+    wp_send_json_success(['items' => array_values($items)]);
+});
+
+add_action('wp_ajax_my_wishlist_merge', function () {
+    if (!is_user_logged_in()) wp_send_json_error(['message' => 'not logged in'], 401);
+    check_ajax_referer('wishlist_nonce', 'nonce');
+
+    $items = [];
+    if (isset($_POST['items'])) {
+        $json = is_array($_POST['items']) ? wp_json_encode($_POST['items']) : wp_unslash($_POST['items']);
+        $items = json_decode($json, true) ?: [];
+    }
+    $current = wl_user_list(get_current_user_id());
+    $saved = wl_save(get_current_user_id(), array_merge($current, (array)$items));
+
+    nocache_headers();
+    wp_send_json_success(['count' => count($saved)]);
+});
+
+/** ===== AJAX: renderer (wishlist sahifasi uchun) ===== */
+add_action('wp_ajax_nopriv_galeon_wishlist_render', 'galeon_wishlist_render_v2');
+add_action('wp_ajax_galeon_wishlist_render', 'galeon_wishlist_render_v2');
+
+function galeon_wishlist_render_v2()
+{
+    nocache_headers();
+    if (empty($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'wishlist_nonce')) {
+        wp_send_json_error(['message' => 'Bad nonce'], 403);
+    }
+
+    // Guest LS elementlari (faqat guest uchun)
+    $raw_items = [];
+    if (isset($_POST['items'])) {
+        $json = is_array($_POST['items']) ? wp_json_encode($_POST['items']) : wp_unslash($_POST['items']);
+        $raw_items = json_decode($json, true) ?: [];
+    }
+
+    $seen = [];
+    $ls_items = [];
+    foreach ((array)$raw_items as $it) {
+        $pid = isset($it['pid']) ? absint($it['pid']) : 0;
+        $vid = isset($it['vid']) ? absint($it['vid']) : 0;
+        if (!$pid) continue;
+        $k = $pid . ':' . $vid;
+        if (isset($seen[$k])) continue;
+        $seen[$k] = true;
+        $ls_items[] = ['pid' => $pid, 'vid' => $vid, 'ts' => isset($it['ts']) ? intval($it['ts']) : time()];
+    }
+
+    if (is_user_logged_in()) {
+        $items_to_render = wl_user_list(get_current_user_id());
+    } else {
+        $items_to_render = $ls_items;
+    }
+    $items_to_render = array_values($items_to_render);
+
+    ob_start();
+    if ($items_to_render) {
+        foreach ($items_to_render as $it) {
+            $pid = absint($it['pid']);
+            $vid = absint($it['vid']);
+            $product = $vid ? wc_get_product($vid) : wc_get_product($pid);
+            if (!$product) continue;
+
+            // O'zingizdagi template part
+            get_template_part('template-parts/product/wishlist-item', null, [
+                'product' => $product,
+                'parent_id' => $pid,
+                'variation_id' => $vid,
+            ]);
+        }
+    } else {
+        echo '<p class="empty">Список избранного пуст.</p>';
+    }
+    $html = ob_get_clean();
+
+    wp_send_json_success([
+        'html' => $html,
+        'count' => count($items_to_render),
+        'logged_in' => is_user_logged_in() ? 1 : 0,
+        'items' => $items_to_render, // Guest LS ni yangilash uchun
+    ]);
+}
+
+
+/**
+ * Modal Auth V2 (AJAX + Magic Links) + localStorage sync (wishlist + cart)
+ */
+if ( ! class_exists('Theme_Modal_Auth_V2') ) {
+    class Theme_Modal_Auth_V2 {
+        const NONCE    = 'modal_auth_v2_nonce';
+        const C_VERIFY = 'ml2_email_verified';
+        const C_RESET  = 'ml2_pw_reset_ready';
+        const TTL      = 900; // 15 daqiqa
 
         public function __construct() {
             add_action('init',              [$this, 'add_routes']);
             add_action('template_redirect', [$this, 'handle_magic']);
 
-            // AJAX (guest)
+            // AJAX for guests
             add_action('wp_ajax_nopriv_auth_login',             [$this, 'auth_login']);
             add_action('wp_ajax_nopriv_auth_register_start',    [$this, 'auth_register_start']);
             add_action('wp_ajax_nopriv_auth_register_check',    [$this, 'auth_register_check']);
@@ -2202,55 +2138,55 @@ if ( ! class_exists('Theme_Modal_Auth')) {
             add_action('wp_ajax_nopriv_auth_forgot_check',      [$this, 'auth_forgot_check']);
             add_action('wp_ajax_nopriv_auth_save_new_password', [$this, 'auth_save_new_password']);
 
-            // REST fallback (Imunify admin-ajax’ni bloklaganda)
+            // Storage sync (after login) — also for logged-in (idempotent)
+            add_action('wp_ajax_auth_sync_storage',             [$this, 'auth_sync_storage']);
+            add_action('wp_ajax_nopriv_auth_sync_storage',      [$this, 'auth_sync_storage']);
+
+            // REST fallback for login
             add_action('rest_api_init', [$this, 'register_rest']);
 
             // Assets
-            add_action('wp_enqueue_scripts',  [$this, 'assets']);
+            add_action('wp_enqueue_scripts', [$this, 'assets']);
 
-            // Pretty permalinklar ishlashi uchun
-            add_action('after_switch_theme', function(){ flush_rewrite_rules(); });
+            // Pretty rules
+            add_action('after_switch_theme', function(){ flush_rewrite_rules(false); });
             add_action('init', function () {
-                if (!get_option('ml_magic_rules_flushed')) {
+                if (!get_option('ml2_rules_flushed')) {
                     flush_rewrite_rules(false);
-                    update_option('ml_magic_rules_flushed', 1);
+                    update_option('ml2_rules_flushed', 1);
                 }
             }, 99);
 
-            // Logoutdan keyin bosh sahifaga
+            // Woo logout redirect → home
             add_filter('woocommerce_logout_default_redirect_url', function ($url) {
                 return home_url('/');
             });
         }
 
-        private function ok($d = [])       { wp_send_json(array_merge(['ok'=>true], $d)); }
-        private function err($m,$c='ERR')  { wp_send_json(['ok'=>false,'error'=>$c,'message'=>$m], 400); }
-        private function setc($n,$v)       { setcookie($n,$v,time()+self::TTL, COOKIEPATH?:'/', COOKIE_DOMAIN?:'', is_ssl(), false); }
-        private function delc($n)          { setcookie($n,'',time()-3600,      COOKIEPATH?:'/', COOKIE_DOMAIN?:'', is_ssl(), false); }
-        private function sign($s)          { return hash_hmac('sha256',$s, wp_salt('auth')); }
-        private function myacc()           { return function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : home_url('/'); }
+        /* ---------- Utils ---------- */
+        private function ok($d = [])      { wp_send_json(array_merge(['ok'=>true], $d)); }
+        private function err($m,$c='ERR') { wp_send_json(['ok'=>false,'error'=>$c,'message'=>$m], 400); }
+        private function setc($n,$v)      { setcookie($n,$v,time()+self::TTL, COOKIEPATH?:'/', COOKIE_DOMAIN?:'', is_ssl(), false); }
+        private function delc($n)         { setcookie($n,'',time()-3600,      COOKIEPATH?:'/', COOKIE_DOMAIN?:'', is_ssl(), false); }
+        private function sign($s)         { return hash_hmac('sha256',$s, wp_salt('auth')); }
+        private function myacc()          { return function_exists('wc_get_page_permalink') ? wc_get_page_permalink('myaccount') : home_url('/'); }
 
-        /** ---------- Routes: /magic/verify , /magic/reset ---------- */
+        /* ---------- Routes: /magic/verify , /magic/reset ---------- */
         public function add_routes() {
-            // Pretty VERIFY: /magic/verify/u/123/t/abc/exp/1700000000/sig/HASH/
             add_rewrite_rule(
                 '^magic/verify/u/([0-9]+)/t/([^/]+)/exp/([0-9]+)/sig/([^/]+)/?$',
                 'index.php?magic_action=verify&u=$matches[1]&t=$matches[2]&exp=$matches[3]&sig=$matches[4]',
                 'top'
             );
-
-            // Pretty RESET: /magic/reset/login/USER/key/KEY/
             add_rewrite_rule(
                 '^magic/reset/login/([^/]+)/key/([^/]+)/?$',
                 'index.php?magic_action=reset&login=$matches[1]&key=$matches[2]',
                 'top'
             );
-
-            // Fallbacklar
             add_rewrite_rule('^magic/(verify|reset)/?', 'index.php?magic_action=$matches[1]', 'top');
 
             add_filter('query_vars', function ($v) {
-                foreach (['magic_action','u','t','exp','sig','login','key','token','rt'] as $k) $v[]=$k;
+                foreach (['magic_action','u','t','exp','sig','login','key','rt'] as $k) $v[]=$k;
                 return $v;
             });
         }
@@ -2260,29 +2196,30 @@ if ( ! class_exists('Theme_Modal_Auth')) {
             if (!$a) return;
 
             if ($a === 'verify') {
-                $u   = absint( get_query_var('u')   ?: ($_GET['u']   ?? 0) );
-                $t   = sanitize_text_field( get_query_var('t')   ?: ($_GET['t']   ?? '') );
+                $u   = absint( get_query_var('u')   ?: ($_GET['u'] ?? 0) );
+                $t   = sanitize_text_field( get_query_var('t')   ?: ($_GET['t'] ?? '') );
                 $exp = absint( get_query_var('exp') ?: ($_GET['exp'] ?? 0) );
                 $sig = sanitize_text_field( get_query_var('sig') ?: ($_GET['sig'] ?? '') );
 
-                // &amp;xxx fallback
-                if (!$sig && !empty($_GET['amp;sig'])) $sig = sanitize_text_field($_GET['amp;sig']);
-                if (!$t   && !empty($_GET['amp;t']))   $t   = sanitize_text_field($_GET['amp;t']);
-                if (!$exp && !empty($_GET['amp;exp'])) $exp = absint($_GET['amp;exp']);
-                if (!$u   && !empty($_GET['amp;u']))   $u   = absint($_GET['amp;u']);
+                // &amp; fallback
+                foreach (['u','t','exp','sig'] as $k) {
+                    if (empty($$k) && !empty($_GET['amp;'.$k])) {
+                        $$k = $k === 'exp' ? absint($_GET['amp;'.$k]) : sanitize_text_field($_GET['amp;'.$k]);
+                    }
+                }
 
                 if (!$u || !$t || !$exp || !$sig) wp_die('Bad params');
                 if ($exp < time())                wp_die('Link expired');
 
                 $payload = "$u|$t|$exp";
-                if (!hash_equals($this->sign($payload), $sig))         wp_die('Bad signature');
-                if (get_user_meta($u, 'ml_email_token_used_'.$t, true)) wp_die('Already used');
+                if ( ! hash_equals($this->sign($payload), $sig) )   wp_die('Bad signature');
+                if ( get_user_meta($u, 'ml2_email_token_used_'.$t, true) ) wp_die('Already used');
 
                 update_user_meta($u, 'email_verified', 1);
-                update_user_meta($u, 'ml_email_token_used_'.$t, time());
+                update_user_meta($u, 'ml2_email_token_used_'.$t, time());
 
                 $rt = wp_generate_password(12, false);
-                set_transient('ml_verify_'.$rt, $u, self::TTL);
+                set_transient('ml2_verify_'.$rt, $u, self::TTL);
                 $this->setc(self::C_VERIFY, $rt);
 
                 wp_safe_redirect( add_query_arg(['verified'=>1,'rt'=>$rt], home_url('/')) );
@@ -2303,31 +2240,55 @@ if ( ! class_exists('Theme_Modal_Auth')) {
                 if (is_wp_error($user)) wp_die('Invalid or expired reset key');
 
                 $rt = wp_generate_password(12, false);
-                set_transient('ml_reset_'.$rt, ['login'=>$login,'key'=>$key], self::TTL);
+                set_transient('ml2_reset_'.$rt, ['login'=>$login,'key'=>$key], self::TTL);
                 $this->setc(self::C_RESET, $rt);
 
-                wp_safe_redirect(home_url('/?reset=1')); exit;
+                wp_safe_redirect( home_url('/?reset=1') );
+                exit;
             }
         }
 
-        /** ---------- AJAX: login ---------- */
+        /* ---------- AJAX: Login ---------- */
         public function auth_login() {
             check_ajax_referer(self::NONCE, 'nonce');
 
             $login_raw = trim((string)($_POST['log'] ?? ''));
+            // Yangi: p_enc (base64 JSON) yoki fallback pwd
             $pwd       = (string)($_POST['pwd'] ?? '');
+            $penc      = (string)($_POST['p_enc'] ?? '');
+
+            // p_enc → decode
+            if (!$pwd && $penc) {
+                $dec = base64_decode($penc, true);
+                if ($dec !== false) {
+                    $j = json_decode($dec, true);
+                    if (is_array($j) && isset($j['p'])) {
+                        $pwd = (string)$j['p'];
+                        // ixtiyoriy: vaqt tekshiruv
+                        // if (isset($j['ts']) && (time()*1000 - (int)$j['ts'] > 5*60*1000)) { /* eskirgan */ }
+                    } else {
+                        // eski format uchun: "password|..."
+                        $parts = explode('|', $dec, 2);
+                        $pwd = (string)($parts[0] ?? '');
+                    }
+                }
+            }
 
             if (!$login_raw || !$pwd) {
                 $this->err('Неверный адрес электронной почты или пароль');
             }
 
-            // username/email mapping
-            $login_try = $login_raw;
+            // Email bo‘lsa, mavjud emasligini darhol aytamiz
             $user_by_email = null;
             if (is_email($login_raw)) {
                 $user_by_email = get_user_by('email', $login_raw);
-                if ($user_by_email) $login_try = $user_by_email->user_login;
+                if (!$user_by_email) {
+                    $this->err('Аккаунт с таким e-mail не найден');
+                }
             }
+
+            // username/email mapping
+            $login_try = $user_by_email ? $user_by_email->user_login : $login_raw;
 
             $creds = [
                 'user_login'    => $login_try,
@@ -2336,7 +2297,7 @@ if ( ! class_exists('Theme_Modal_Auth')) {
             ];
             $u = wp_signon($creds);
 
-            // Agar birinchi urinish xato va foydalanuvchi email bo‘lsa
+            // fallback: agar yuqorida email keltirilmagan bo‘lsa va birinchi urinish xato bo‘lsa
             if (is_wp_error($u) && !$user_by_email && is_email($login_raw)) {
                 $user_by_email = get_user_by('email', $login_raw);
                 if ($user_by_email) {
@@ -2345,7 +2306,7 @@ if ( ! class_exists('Theme_Modal_Auth')) {
                 }
             }
 
-            // Manual fallback: parol to‘g‘ri bo‘lsa sessiya o‘rnatamiz
+            // Manual sessiya
             if (is_wp_error($u)) {
                 if ($user_by_email && wp_check_password($pwd, $user_by_email->user_pass, $user_by_email->ID)) {
                     wp_set_current_user($user_by_email->ID);
@@ -2362,9 +2323,12 @@ if ( ! class_exists('Theme_Modal_Auth')) {
             $this->ok(['redirect' => $this->myacc()]);
         }
 
-        /** ---------- AJAX: register/verify ---------- */
+
+
+        /* ---------- AJAX: Register start / verify check ---------- */
         public function auth_register_start() {
             check_ajax_referer(self::NONCE, 'nonce');
+
             $email = sanitize_email($_POST['user_email'] ?? '');
             $pass  = (string)($_POST['user_pass']  ?? '');
             $name  = sanitize_text_field($_POST['first_name'] ?? '');
@@ -2373,19 +2337,18 @@ if ( ! class_exists('Theme_Modal_Auth')) {
             if (email_exists($email)) $this->err('E-mail уже зарегистрирован');
             if (strlen($pass) < 6)    $this->err('Пароль слишком короткий');
 
+            // username sifatida email
             $uid = wp_create_user($email, $pass, $email);
-            if (is_wp_error($uid))    $this->err($uid->get_error_message());
+            if (is_wp_error($uid)) $this->err($uid->get_error_message());
             if ($name) update_user_meta($uid, 'first_name', $name);
 
+            // Magic verify
             $t   = wp_generate_password(20, false);
             $exp = time() + self::TTL;
             $sig = $this->sign($uid.'|'.$t.'|'.$exp);
-            update_user_meta($uid, 'ml_email_token_'.$t, $exp);
+            update_user_meta($uid, 'ml2_email_token_'.$t, $exp);
 
-            $url = home_url(sprintf(
-                '/magic/verify/u/%d/t/%s/exp/%d/sig/%s/',
-                $uid, rawurlencode($t), $exp, rawurlencode($sig)
-            ));
+            $url = home_url(sprintf('/magic/verify/u/%d/t/%s/exp/%d/sig/%s/', $uid, rawurlencode($t), $exp, rawurlencode($sig)));
 
             $subject = 'Подтверждение регистрации';
             $headers = ['Content-Type: text/html; charset=UTF-8'];
@@ -2402,12 +2365,12 @@ if ( ! class_exists('Theme_Modal_Auth')) {
         public function auth_register_check() {
             check_ajax_referer(self::NONCE, 'nonce');
 
-            // rt param (agar verify redirect rt bilan kelsa)
+            // via rt (query) first
             $rt = sanitize_text_field($_POST['rt'] ?? '');
             if ($rt) {
-                $uid = get_transient('ml_verify_'.$rt);
+                $uid = get_transient('ml2_verify_'.$rt);
                 if ($uid) {
-                    delete_transient('ml_verify_'.$rt);
+                    delete_transient('ml2_verify_'.$rt);
                     $this->delc(self::C_VERIFY);
                     wp_set_current_user($uid);
                     wp_set_auth_cookie($uid);
@@ -2415,13 +2378,12 @@ if ( ! class_exists('Theme_Modal_Auth')) {
                     $this->ok(['verified'=>true, 'redirect'=>$this->myacc()]);
                 }
             }
-
-            // cookie orqali
+            // via cookie
             $rt = $_COOKIE[self::C_VERIFY] ?? '';
             if ($rt) {
-                $uid = get_transient('ml_verify_'.$rt);
+                $uid = get_transient('ml2_verify_'.$rt);
                 if ($uid) {
-                    delete_transient('ml_verify_'.$rt);
+                    delete_transient('ml2_verify_'.$rt);
                     $this->delc(self::C_VERIFY);
                     wp_set_current_user($uid);
                     wp_set_auth_cookie($uid);
@@ -2432,9 +2394,10 @@ if ( ! class_exists('Theme_Modal_Auth')) {
             $this->ok(['verified'=>false]);
         }
 
-        /** ---------- AJAX: forgot/reset ---------- */
+        /* ---------- AJAX: Forgot / Reset ---------- */
         public function auth_forgot_start() {
             check_ajax_referer(self::NONCE, 'nonce');
+
             $email = sanitize_email($_POST['user_email'] ?? '');
             if (!is_email($email)) $this->err('Неверный e-mail');
 
@@ -2444,10 +2407,7 @@ if ( ! class_exists('Theme_Modal_Auth')) {
             $key = get_password_reset_key($user);
             if (is_wp_error($key)) $this->err($key->get_error_message());
 
-            $url = home_url(sprintf(
-                '/magic/reset/login/%s/key/%s/',
-                rawurlencode($user->user_login), rawurlencode($key)
-            ));
+            $url = home_url(sprintf('/magic/reset/login/%s/key/%s/', rawurlencode($user->user_login), rawurlencode($key)));
 
             $subject = 'Сброс пароля';
             $headers = ['Content-Type: text/html; charset=UTF-8'];
@@ -2466,19 +2426,18 @@ if ( ! class_exists('Theme_Modal_Auth')) {
 
             $rt = sanitize_text_field($_POST['rt'] ?? '');
             if ($rt) {
-                $d = get_transient('ml_reset_'.$rt);
+                $d = get_transient('ml2_reset_'.$rt);
                 if ($d && !empty($d['login']) && !empty($d['key'])) {
-                    delete_transient('ml_reset_'.$rt);
+                    delete_transient('ml2_reset_'.$rt);
                     $this->delc(self::C_RESET);
                     $this->ok(['ready'=>true,'login'=>$d['login'],'key'=>$d['key']]);
                 }
             }
-
             $rt = $_COOKIE[self::C_RESET] ?? '';
             if ($rt) {
-                $d = get_transient('ml_reset_'.$rt);
+                $d = get_transient('ml2_reset_'.$rt);
                 if ($d && !empty($d['login']) && !empty($d['key'])) {
-                    delete_transient('ml_reset_'.$rt);
+                    delete_transient('ml2_reset_'.$rt);
                     $this->delc(self::C_RESET);
                     $this->ok(['ready'=>true,'login'=>$d['login'],'key'=>$d['key']]);
                 }
@@ -2488,13 +2447,14 @@ if ( ! class_exists('Theme_Modal_Auth')) {
 
         public function auth_save_new_password() {
             check_ajax_referer(self::NONCE, 'nonce');
+
             $login = sanitize_text_field($_POST['login'] ?? '');
             $key   = sanitize_text_field($_POST['key']   ?? '');
             $p1    = (string)($_POST['pass1'] ?? '');
             $p2    = (string)($_POST['pass2'] ?? '');
 
-            if ($p1 !== $p2)  $this->err('Пароли не совпадают');
-            if (strlen($p1)<6)$this->err('Пароль слишком короткий');
+            if ($p1 !== $p2)   $this->err('Пароли не совпадают');
+            if (strlen($p1)<6) $this->err('Пароль слишком короткий');
 
             $user = check_password_reset_key($key, $login);
             if (is_wp_error($user)) $this->err('Ссылка недействительна или устарела');
@@ -2508,14 +2468,86 @@ if ( ! class_exists('Theme_Modal_Auth')) {
             $this->ok(['redirect' => $this->myacc()]);
         }
 
-        /** ---------- REST fallback ---------- */
+        /* ---------- AJAX: localStorage Sync (likes + cart) ---------- */
+        public function auth_sync_storage() {
+            // Nonce majburiy emas (login keyin ham chaqiriladi); lekin bo‘lsa tekshiramiz
+            $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
+            if ($nonce && !wp_verify_nonce($nonce, self::NONCE)) {
+                $this->err('Bad nonce');
+            }
+
+            $likes = isset($_POST['likes']) ? wp_unslash($_POST['likes']) : '[]';
+            $cart  = isset($_POST['cart'])  ? wp_unslash($_POST['cart'])  : '[]';
+
+            $likes = json_decode($likes, true);
+            $cart  = json_decode($cart,  true);
+            if (!is_array($likes)) $likes = [];
+            if (!is_array($cart))  $cart  = [];
+
+            // 1) Wish/Like → user_meta (dedupe)
+            $user_id = get_current_user_id();
+            if ($user_id) {
+                $meta_key = 'theme_wishlist_ids';
+                $existing = get_user_meta($user_id, $meta_key, true);
+                if (!is_array($existing)) $existing = [];
+                $incoming = array_filter(array_map('absint', $likes));
+                $merged   = array_values(array_unique(array_merge($existing, $incoming)));
+                update_user_meta($user_id, $meta_key, $merged);
+            }
+
+            // 2) Cart merge → Woo cart (sessionga)
+            if (class_exists('WooCommerce') && function_exists('WC') && !empty($cart)) {
+                if (!WC()->cart) wc_load_cart();
+
+                foreach ($cart as $row) {
+                    $pid  = isset($row['product_id']) ? absint($row['product_id']) : 0;
+                    $qty  = isset($row['quantity'])   ? max(1, absint($row['quantity'])) : 1;
+                    $vid  = isset($row['variation_id']) ? absint($row['variation_id']) : 0;
+                    $vars = [];
+
+                    // optional: variations (array of {attr_name: value})
+                    if (!empty($row['variation']) && is_array($row['variation'])) {
+                        foreach ($row['variation'] as $k=>$v) {
+                            $vars[$k] = sanitize_text_field($v);
+                        }
+                    }
+
+                    if ($vid) {
+                        // variable product
+                        @WC()->cart->add_to_cart($pid, $qty, $vid, $vars);
+                    } else {
+                        // simple product
+                        @WC()->cart->add_to_cart($pid, $qty);
+                    }
+                }
+            }
+
+            $this->ok(['synced'=>true]);
+        }
+
+        /* ---------- REST: /wp-json/ml2/v1/login ---------- */
         public function register_rest() {
-            register_rest_route('ml/v1', '/login', [
+            register_rest_route('ml2/v1', '/login', [
                 'methods'  => 'POST',
                 'permission_callback' => '__return_true',
                 'callback' => function (WP_REST_Request $req) {
                     $login_raw = trim((string)$req->get_param('log'));
-                    $pwd       = (string)$req->get_param('pwd');
+                    // Yangi: p_enc yoki pwd
+                    $pwd  = (string)$req->get_param('pwd');
+                    $penc = (string)$req->get_param('p_enc');
+
+                    if (!$pwd && $penc) {
+                        $dec = base64_decode($penc, true);
+                        if ($dec !== false) {
+                            $j = json_decode($dec, true);
+                            if (is_array($j) && isset($j['p'])) {
+                                $pwd = (string)$j['p'];
+                            } else {
+                                $parts = explode('|', $dec, 2);
+                                $pwd = (string)($parts[0] ?? '');
+                            }
+                        }
+                    }
 
                     if (!$login_raw || !$pwd) {
                         return new WP_REST_Response(['ok'=>false,'message'=>'Неверный адрес электронной почты или пароль'], 400);
@@ -2525,7 +2557,10 @@ if ( ! class_exists('Theme_Modal_Auth')) {
                     $user_by_email = null;
                     if (is_email($login_raw)) {
                         $user_by_email = get_user_by('email', $login_raw);
-                        if ($user_by_email) $login_try = $user_by_email->user_login;
+                        if (!$user_by_email) {
+                            return new WP_REST_Response(['ok'=>false,'message'=>'Аккаунт с таким e-mail не найден'], 400);
+                        }
+                        $login_try = $user_by_email->user_login;
                     }
 
                     $creds = [
@@ -2545,35 +2580,32 @@ if ( ! class_exists('Theme_Modal_Auth')) {
                         return new WP_REST_Response(['ok'=>false,'message'=>'Неверный адрес электронной почты или пароль'], 400);
                     }
 
-                    if (function_exists('wc_set_customer_auth_cookie')) {
-                        wc_set_customer_auth_cookie($u->ID);
-                    }
+                    if (function_exists('wc_set_customer_auth_cookie')) wc_set_customer_auth_cookie($u->ID);
                     return new WP_REST_Response(['ok'=>true,'redirect'=>$this->myacc()], 200);
                 }
+
             ]);
         }
 
-        /** ---------- Assets ---------- */
+        /* ---------- Assets ---------- */
         public function assets() {
-            $path = get_stylesheet_directory().'/assets/js/auth-otp.js';
+            $path = get_stylesheet_directory().'/assets/js/auth-modal.v2.js';
             $ver  = file_exists($path) ? filemtime($path) : null;
 
             wp_enqueue_script(
-                'auth-otp',
-                get_stylesheet_directory_uri().'/assets/js/auth-otp.js',
+                'auth-modal-v2',
+                get_stylesheet_directory_uri().'/assets/js/auth-modal.v2.js',
                 ['jquery'], $ver, true
             );
-            wp_localize_script('auth-otp', 'MODAL_AUTH', [
+
+            wp_localize_script('auth-modal-v2', 'MODAL_AUTH_V2', [
                 'ajax_url'       => admin_url('admin-ajax.php'),
-                'rest_login'     => rest_url('ml/v1/login'),
+                'rest_login'     => rest_url('ml2/v1/login'),
                 'nonce'          => wp_create_nonce(self::NONCE),
                 'my_account_url' => $this->myacc(),
                 'assets'         => get_stylesheet_directory_uri().'/assets',
             ]);
         }
     }
-    new Theme_Modal_Auth();
+    new Theme_Modal_Auth_V2();
 }
-
-
-
