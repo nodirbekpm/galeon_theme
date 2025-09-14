@@ -104,6 +104,18 @@ $shop_url    = function_exists('wc_get_page_permalink') ? wc_get_page_permalink(
 
         <div class="main">
             <!-- filter -->
+            <style>
+                @media (max-width: 992px){
+                    .catalog .main .filter .filter_main.active{
+                        padding-bottom: 75px;
+                    }
+                    .catalog .main .filter .filter-buttons .btn-primary{
+                        position: fixed;
+                        width: 96.5%;
+                        bottom: 0;
+                    }
+                }
+            </style>
             <!-- <div class="filter_cover" data-sticky> -->
             <div class="filter " id="filter" >
 
@@ -336,6 +348,21 @@ $shop_url    = function_exists('wc_get_page_permalink') ? wc_get_page_permalink(
 
             const applyBtn   = $('.filter-buttons .btn-primary');
             const resetBtn   = $('.filter-buttons #btn-reset');
+
+            // --- NEW: auto / manual rejimni aniqlash uchun ---
+            const hiddenButtons = $('.hidden_buttons');
+            const isAutoMode = () => hiddenButtons && getComputedStyle(hiddenButtons).display === 'none';
+            const softUpdate = () => { readRangesFromUI(); updateTopButtons(); };
+            const commitFilters = () => {
+                readRangesFromUI();
+                updateTopButtons();
+                if (isAutoMode()) {
+                    state.page = 1;
+                    state.extraShown = 0;
+                    fetchProducts('replace');
+                }
+            };
+            // ---------------------------------------------------
 
             // === Current context (slug + URLs) ===
             const currentSlug =
@@ -687,7 +714,7 @@ $shop_url    = function_exists('wc_get_page_permalink') ? wc_get_page_permalink(
 
                 updateTopButtons();
                 initSwipers();
-                if (!MODAL_AUTH || !MODAL_AUTH.logged_in) {
+                if (!MODAL_AUTH_V2 || !MODAL_AUTH_V2.logged_in) {
                     window.applyWishlistActiveFromLS?.();
                 }
 
@@ -856,18 +883,27 @@ $shop_url    = function_exists('wc_get_page_permalink') ? wc_get_page_permalink(
                 offersBox.dataset.activeIndex = String(idx);
             });
 
-            // Variantlar
+            // === FILTER TRIGGERS (AUTO vs MANUAL) ===
+
+            // Variantlar (checkboxlar): avto rejimda o‘zgarishi bilan ishlaydi
             document.addEventListener('change', e=>{
                 const sec = e.target.closest('.filter-section[data-filter="variant"]'); if(!sec) return;
-                readRangesFromUI();
-                updateTopButtons();
+                commitFilters(); // auto: fetch; manual: faqat holat yangilanadi
             });
 
-            const onFilterInput = ()=>{ readRangesFromUI(); updateTopButtons(); };
-            $$('.filter-section .range-inputs .input-min, .filter-section .range-inputs .input-max, .filter-section .range-slider .range-min, .filter-section .range-slider .range-max')
+            // Raqamli inputlar: input → silliq UI; change/blur → auto rejimda fetch
+            $$('.filter-section .range-inputs .input-min, .filter-section .range-inputs .input-max')
                 .forEach(el=>{
-                    el.addEventListener('input', onFilterInput);
-                    el.addEventListener('change', onFilterInput);
+                    el.addEventListener('input', softUpdate);
+                    el.addEventListener('change', commitFilters);
+                    el.addEventListener('blur', commitFilters);
+                });
+
+            // Range slayderlar: input → silliq UI; change → auto rejimda fetch
+            $$('.filter-section .range-slider .range-min, .filter-section .range-slider .range-max')
+                .forEach(el=>{
+                    el.addEventListener('input', softUpdate);
+                    el.addEventListener('change', commitFilters);
                 });
 
             function closeFilter() {
@@ -877,6 +913,7 @@ $shop_url    = function_exists('wc_get_page_permalink') ? wc_get_page_permalink(
                 overlay.classList.remove("active");
             }
 
+            // MANUAL rejim: “Показать” tugmasi
             applyBtn?.addEventListener('click', e=>{
                 e.preventDefault();
                 readRangesFromUI();
@@ -927,6 +964,7 @@ $shop_url    = function_exists('wc_get_page_permalink') ? wc_get_page_permalink(
             });
         })();
     </script>
+
 
 
 

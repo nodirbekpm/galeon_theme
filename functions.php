@@ -791,6 +791,158 @@ add_action('woocommerce_admin_order_data_after_billing_address', function ($orde
     echo '</div>';
 }, 10);
 
+/**
+ * 8) Mijozga buyurtma xatini yuborish (items + qty + totals + delivery)
+ *    Bir marta yuborish uchun flag bilan himoyalangan.
+ */
+//add_action('woocommerce_checkout_order_processed', 'galeon_mail_customer_copy', 20, 1);
+//add_action('woocommerce_order_status_on-hold',     'galeon_mail_customer_copy', 20, 1);
+//
+//function galeon_mail_customer_copy( $order_id ) {
+//    if ( ! $order_id ) return;
+//    if ( get_post_meta($order_id, '_customer_copy_sent', true) ) return; // dublikatdan himoya
+//
+//    $order = wc_get_order($order_id);
+//    if ( ! $order ) return;
+//
+//    $email = $order->get_billing_email();
+//    if ( ! $email ) return; // E-mail bo‘lmasa yubormaymiz
+//
+//    // Sarlavha va qisqa kirish
+//    $subject = sprintf( 'Ваш заказ №%s принят', $order->get_order_number() );
+//    $greet   = 'Спасибо за заказ! Ниже — детали вашего заказа.';
+//
+//    // Yetkazib berish ma’lumotlari (siz checkoutdagi custom metalarni saqlab qo‘ygansiz)
+//    $delivery_method = $order->get_meta('_delivery_method');
+//    $ship_city   = $order->get_shipping_city();
+//    $ship_addr1  = $order->get_shipping_address_1();
+//    $b_phone     = $order->get_billing_phone();
+//
+//    // Buyurtma tarkibi (jadval)
+//    $items_html = '';
+//    foreach ( $order->get_items() as $item_id => $item ) {
+//        $product = $item->get_product();
+//        $name    = $item->get_name();
+//        $qty     = (int) $item->get_quantity();
+//        $sku     = $product ? $product->get_sku() : '';
+//        $sku     = $sku !== '' ? $sku : '—';
+//
+//        // Variatsiya atributlari (agar bo'lsa)
+//        $variation_html = '';
+//        if ( $product && $product->is_type('variation') ) {
+//            $variation_html = wc_get_formatted_variation( $product, true );
+//            if ( $variation_html ) {
+//                $variation_html = '<div style="color:#666;font-size:12px;">' . $variation_html . '</div>';
+//            }
+//        }
+//
+//        // Qator summasi (soliqni qo‘shib)
+//        $line_total_inc_tax = (float) $item->get_total() + (float) $item->get_total_tax();
+//        $line_total_html = wc_price( $line_total_inc_tax, [ 'currency' => $order->get_currency() ] );
+//
+//        $items_html .= sprintf(
+//            '<tr>
+//                <td style="padding:8px 10px;border:1px solid #eee;">
+//                    <strong>%s</strong>%s
+//                    <div style="color:#999;font-size:12px;">Артикул: %s</div>
+//                </td>
+//                <td style="padding:8px 10px;border:1px solid #eee;text-align:center;">%d</td>
+//                <td style="padding:8px 10px;border:1px solid #eee;text-align:right;">%s</td>
+//            </tr>',
+//            esc_html($name),
+//            $variation_html,
+//            esc_html($sku),
+//            $qty,
+//            wp_kses_post($line_total_html)
+//        );
+//    }
+//
+//    if ( $items_html === '' ) return;
+//
+//    // Yakuniy summalar
+//    $subtotal_html = wc_price( $order->get_subtotal(), ['currency'=>$order->get_currency()] );
+//    $shipping_html = wc_price( $order->get_shipping_total() + $order->get_shipping_tax(), ['currency'=>$order->get_currency()] );
+//    $discount_html = wc_price( $order->get_discount_total(), ['currency'=>$order->get_currency()] );
+//    $total_html    = wc_price( $order->get_total(), ['currency'=>$order->get_currency()] );
+//
+//    // Yetkazib berish blokini matn ko‘rinishida yig’amiz
+//    $delivery_block = '';
+//    if ( $delivery_method ) {
+//        if ( $delivery_method === 'courier' ) {
+//            $extra = [];
+//            foreach ([
+//                         'Корпус'   => '_delivery_building',
+//                         'Квартира' => '_delivery_apartment',
+//                         'Подъезд'  => '_delivery_entrance',
+//                         'Этаж'     => '_delivery_floor',
+//                     ] as $label => $key ) {
+//                $v = $order->get_meta($key);
+//                if ($v) $extra[] = esc_html($label . ': ' . $v);
+//            }
+//            $delivery_block = sprintf(
+//                '<p><strong>Доставка:</strong> Курьером<br>Город: %s<br>Адрес: %s%s</p>',
+//                esc_html($ship_city ?: '—'),
+//                esc_html($ship_addr1 ?: '—'),
+//                $extra ? '<br>' . implode('<br>', $extra) : ''
+//            );
+//        } elseif ( $delivery_method === 'pickup' ) {
+//            $addr = $order->get_meta('_pickup_address');
+//            $delivery_block = '<p><strong>Самовывоз:</strong> ' . esc_html($addr ?: '—') . '</p>';
+//        } else {
+//            $delivery_block = '<p><strong>Доставка:</strong> По согласованию с менеджером</p>';
+//        }
+//    }
+//
+//    // HTML xat (Woo mailer bilan “wrap” qilamiz)
+//    $html  = '';
+//    $html .= '<p>' . esc_html($greet) . '</p>';
+//    if ( $b_phone ) {
+//        $html .= '<p><strong>Телефон:</strong> ' . esc_html($b_phone) . '</p>';
+//    }
+//    $html .= $delivery_block;
+//
+//    $html .= '
+//        <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:12px 0;">
+//            <thead>
+//                <tr>
+//                    <th align="left"  style="padding:8px 10px;border:1px solid #eee;background:#f8f8f8;">Товар</th>
+//                    <th align="center"style="padding:8px 10px;border:1px solid #eee;background:#f8f8f8;">Кол-во</th>
+//                    <th align="right" style="padding:8px 10px;border:1px solid #eee;background:#f8f8f8;">Сумма</th>
+//                </tr>
+//            </thead>
+//            <tbody>' . $items_html . '</tbody>
+//        </table>';
+//
+//    // Totals
+//    $html .= '<table cellpadding="0" cellspacing="0" style="width:100%;margin-top:8px">';
+//    $html .= '<tr><td align="right" style="padding:4px 0;color:#555">Подытог: <strong>' . $subtotal_html . '</strong></td></tr>';
+//    if ( (float) $order->get_discount_total() > 0 ) {
+//        $html .= '<tr><td align="right" style="padding:4px 0;color:#555">Скидка: <strong>− ' . $discount_html . '</strong></td></tr>';
+//    }
+//    if ( (float) $order->get_shipping_total() > 0 || (float) $order->get_shipping_tax() > 0 ) {
+//        $html .= '<tr><td align="right" style="padding:4px 0;color:#555">Доставка: <strong>' . $shipping_html . '</strong></td></tr>';
+//    }
+//    $html .= '<tr><td align="right" style="padding:6px 0;font-size:15px">Итого: <strong>' . $total_html . '</strong></td></tr>';
+//    $html .= '</table>';
+//
+//    // WooCommerce mailer’dan foydalanamiz (brandlangan shablon bilan ketadi)
+//    $mailer  = WC()->mailer();
+//    $wrapped = $mailer->wrap_message( sprintf('Заказ №%s', $order->get_order_number()), $html );
+//    $headers = ['Content-Type: text/html; charset=UTF-8'];
+//
+//    // Ixtiyoriy: kopyasini sales’ga yuborish (oching va o'zgartiring)
+//    // $headers[] = 'Bcc: Sales <sales@your-domain.tld>';
+//
+//    $sent = $mailer->send( $email, $subject, $wrapped, $headers );
+//
+//    if ( $sent ) {
+//        update_post_meta( $order_id, '_customer_copy_sent', 1 );
+//    }
+//}
+
+
+
+
 
 /** =========================
  *  SITE SETTINGS via ACF
@@ -2201,7 +2353,6 @@ if ( ! class_exists('Theme_Modal_Auth_V2') ) {
                 $exp = absint( get_query_var('exp') ?: ($_GET['exp'] ?? 0) );
                 $sig = sanitize_text_field( get_query_var('sig') ?: ($_GET['sig'] ?? '') );
 
-                // &amp; fallback
                 foreach (['u','t','exp','sig'] as $k) {
                     if (empty($$k) && !empty($_GET['amp;'.$k])) {
                         $$k = $k === 'exp' ? absint($_GET['amp;'.$k]) : sanitize_text_field($_GET['amp;'.$k]);
@@ -2210,21 +2361,23 @@ if ( ! class_exists('Theme_Modal_Auth_V2') ) {
 
                 if (!$u || !$t || !$exp || !$sig) wp_die('Bad params');
                 if ($exp < time())                wp_die('Link expired');
-
                 $payload = "$u|$t|$exp";
-                if ( ! hash_equals($this->sign($payload), $sig) )   wp_die('Bad signature');
+                if ( ! hash_equals($this->sign($payload), $sig) ) wp_die('Bad signature');
                 if ( get_user_meta($u, 'ml2_email_token_used_'.$t, true) ) wp_die('Already used');
 
                 update_user_meta($u, 'email_verified', 1);
                 update_user_meta($u, 'ml2_email_token_used_'.$t, time());
 
-                $rt = wp_generate_password(12, false);
-                set_transient('ml2_verify_'.$rt, $u, self::TTL);
-                $this->setc(self::C_VERIFY, $rt);
+                // ✅ Darhol login
+                wp_set_current_user($u);
+                wp_set_auth_cookie($u, true);
+                if (function_exists('wc_set_customer_auth_cookie')) wc_set_customer_auth_cookie($u);
 
-                wp_safe_redirect( add_query_arg(['verified'=>1,'rt'=>$rt], home_url('/')) );
+                // ✅ Asosiy sahifaga, lekin boshqa tablarga signal berish uchun flag bilan
+                wp_safe_redirect( add_query_arg('ml2','authed', home_url('/')) );
                 exit;
             }
+
 
             if ($a === 'reset') {
                 $login = get_query_var('login') ?: ($_GET['login'] ?? '');
@@ -2239,13 +2392,20 @@ if ( ! class_exists('Theme_Modal_Auth_V2') ) {
                 $user = check_password_reset_key($key, $login);
                 if (is_wp_error($user)) wp_die('Invalid or expired reset key');
 
-                $rt = wp_generate_password(12, false);
-                set_transient('ml2_reset_'.$rt, ['login'=>$login,'key'=>$key], self::TTL);
-                $this->setc(self::C_RESET, $rt);
+                // ✅ Reset linkni qayta ishlatib bo‘lmasligi uchun activation key’ni tozalaymiz
+                global $wpdb;
+                $wpdb->update($wpdb->users, ['user_activation_key' => ''], ['ID' => $user->ID]);
 
-                wp_safe_redirect( home_url('/?reset=1') );
+                // ✅ Darhol login
+                wp_set_current_user($user->ID);
+                wp_set_auth_cookie($user->ID, true);
+                if (function_exists('wc_set_customer_auth_cookie')) wc_set_customer_auth_cookie($user->ID);
+
+                // ✅ My Account’ga, flag bilan
+                wp_safe_redirect( add_query_arg('ml2','authed', $this->myacc()) );
                 exit;
             }
+
         }
 
         /* ---------- AJAX: Login ---------- */
@@ -2312,7 +2472,7 @@ if ( ! class_exists('Theme_Modal_Auth_V2') ) {
                     wp_set_current_user($user_by_email->ID);
                     wp_set_auth_cookie($user_by_email->ID, true);
                     if (function_exists('wc_set_customer_auth_cookie')) wc_set_customer_auth_cookie($user_by_email->ID);
-                    $this->ok(['redirect' => $this->myacc(), 'forced' => true]);
+                    $this->ok(['redirect' => home_url('/'), 'forced' => true]);
                 }
                 $this->err('Неверный адрес электронной почты или пароль');
             }
@@ -2320,7 +2480,7 @@ if ( ! class_exists('Theme_Modal_Auth_V2') ) {
             if (function_exists('wc_set_customer_auth_cookie')) {
                 wc_set_customer_auth_cookie($u->ID);
             }
-            $this->ok(['redirect' => $this->myacc()]);
+            $this->ok(['redirect' => home_url('/')]);
         }
 
 
