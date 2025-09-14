@@ -378,17 +378,33 @@
     });
 
     // Magic link tab autoclose (opened by user)
+// --- Yangi: magic linkdan kelganda shu tabda qolamiz, boshqalarga LS orqali signal yuboramiz
     document.addEventListener('DOMContentLoaded', function(){
         try {
             const qs = new URLSearchParams(location.search || '');
-            if (qs.get('verified') === '1' || qs.get('reset') === '1') {
-                setTimeout(function(){
-                    window.close();
-                    try { window.open('', '_self'); window.close(); } catch(e){}
-                }, 150);
+            if (qs.get('ml2') === 'authed') {
+                // Boshqa tab(lar)ga signal
+                try { localStorage.setItem('ML2_AUTH_DONE', String(Date.now())); } catch(e){}
+                // URL'dan flagni tozalab yuboramiz
+                try {
+                    const u = new URL(location.href);
+                    u.searchParams.delete('ml2');
+                    history.replaceState({}, '', u.toString());
+                } catch(e){}
+                // Bu tab ochiq qoladi (allaqachon home/my-accountga yo'naltirilgan)
             }
         } catch(_){}
     });
+
+// --- Eski tab(lar): signal kelganda o'zini yangilaydi (yopishga urunish muvaffaqiyatsiz bo'lishi mumkin)
+    window.addEventListener('storage', function(e){
+        if (e.key === 'ML2_AUTH_DONE') {
+            try { window.close(); } catch(_) {}
+            // Baribir yo'naltiramiz — foydalanuvchi allaqachon login bo'lgan bo'ladi
+            window.location.href = MODAL_AUTH_V2.my_account_url || '/';
+        }
+    });
+
 
     /* ================= localStorage helpers ================= */
     // Compatible keys: ['basket','cart'] and ['like','likes','wishlist']
