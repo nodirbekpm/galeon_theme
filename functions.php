@@ -704,23 +704,24 @@ add_filter('woocommerce_default_gateway', function () {
     return 'nopay';
 });
 
-/* 4) Checkout maydonlarini soddalashtirish: faqat Ism/Telefon majburiy */
+/* 4) Checkout maydonlarini soddalashtirish: faqat Ism/Email/Telefon majburiy */
 add_filter('woocommerce_checkout_fields', function ($fields) {
-    // Billing
+    // Avval hammasini optional qilyapsiz — lekin email mehmon uchun required bo‘lsin:
     foreach ($fields['billing'] as &$f) {
         $f['required'] = false;
     }
     if (isset($fields['billing']['billing_first_name'])) $fields['billing']['billing_first_name']['required'] = true;
-    if (isset($fields['billing']['billing_phone'])) $fields['billing']['billing_phone']['required'] = true;
-    if (isset($fields['billing']['billing_email'])) $fields['billing']['billing_email']['required'] = false;
+    if (isset($fields['billing']['billing_phone']))       $fields['billing']['billing_phone']['required']       = true;
 
-    // Shipping — barchasi optional; courier tanlanganda serverda tekshiramiz
-    if (!empty($fields['shipping'])) {
-        foreach ($fields['shipping'] as &$f) {
-            $f['required'] = false;
-        }
+    if (isset($fields['billing']['billing_email'])) {
+        $fields['billing']['billing_email']['required'] = !is_user_logged_in(); // mehmonlar uchun majburiy
+        $fields['billing']['billing_email']['validate'] = array('email');       // Woo’ning email validatoridan foyd.
     }
-    // Order comments optional
+
+    // Shipping hammasi optional qoladi
+    if (!empty($fields['shipping'])) {
+        foreach ($fields['shipping'] as &$f) { $f['required'] = false; }
+    }
     if (isset($fields['order']['order_comments'])) $fields['order']['order_comments']['required'] = false;
 
     return $fields;
@@ -731,37 +732,27 @@ add_action('woocommerce_after_checkout_validation', function ($data, $errors) {
     $method = isset($_POST['delivery_method']) ? sanitize_text_field($_POST['delivery_method']) : 'manager';
 
     if (empty($_POST['billing_first_name'])) $errors->add('billing_first_name', 'Укажите имя.');
-    if (empty($_POST['billing_phone'])) $errors->add('billing_phone', 'Укажите телефон.');
+    if (empty($_POST['billing_phone']))      $errors->add('billing_phone', 'Укажите телефон.');
+
+    if (!is_user_logged_in()) {
+        $email = isset($_POST['billing_email']) ? sanitize_email($_POST['billing_email']) : '';
+        if (empty($email) || !is_email($email)) {
+            $errors->add('billing_email', 'Укажите корректный e-mail.');
+        }
+    }
 
     if ($method === 'courier') {
-        if (empty($_POST['shipping_city'])) $errors->add('shipping_city', 'Укажите город доставки.');
+        if (empty($_POST['shipping_city']))      $errors->add('shipping_city', 'Укажите город доставки.');
         if (empty($_POST['shipping_address_1'])) $errors->add('shipping_address_1', 'Укажите улицу и дом.');
     }
 }, 10, 2);
 
 /* 6) Buyurtmaga saqlash (shipping va custom meta) */
-add_action('woocommerce_checkout_create_order', function ($order, $data) {
-    $method = isset($_POST['delivery_method']) ? sanitize_text_field($_POST['delivery_method']) : 'manager';
-    $order->update_meta_data('_delivery_method', $method);
-
-    if ($method === 'courier') {
-        if (!empty($_POST['shipping_city'])) $order->set_shipping_city(sanitize_text_field($_POST['shipping_city']));
-        if (!empty($_POST['shipping_address_1'])) $order->set_shipping_address_1(sanitize_text_field($_POST['shipping_address_1']));
-
-        foreach ([
-                     '_delivery_building' => 'delivery_building',
-                     '_delivery_apartment' => 'delivery_apartment',
-                     '_delivery_entrance' => 'delivery_entrance',
-                     '_delivery_floor' => 'delivery_floor',
-                 ] as $meta_key => $post_key) {
-            if (!empty($_POST[$post_key])) {
-                $order->update_meta_data($meta_key, sanitize_text_field($_POST[$post_key]));
-            }
-        }
-    } elseif ($method === 'pickup') {
-        $order->update_meta_data('_pickup_address', 'Электродная улица, 13с2А');
+add_action('woocommerce_checkout_create_order', function ($order) {
+    if (!$order->get_billing_email() && !empty($_POST['billing_email'])) {
+        $order->set_billing_email( sanitize_email($_POST['billing_email']) );
     }
-}, 10, 2);
+}, 9);
 
 /* 7) Admin buyurtma sahifasida ko'rsatish (infoga qulay) */
 add_action('woocommerce_admin_order_data_after_billing_address', function ($order) {
