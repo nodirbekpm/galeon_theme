@@ -1168,6 +1168,109 @@ add_action('wp_enqueue_scripts', function () {
 
 
 /**
+ * Product Import
+ *
+ */
+/* 1) CSV mapping: sarlavhalarni tanitish */
+add_filter('woocommerce_csv_product_import_mapping_options', function($options){
+    foreach (['pa_color','pa_length','pa_width','pa_height','pa_weight','pa_option'] as $c) {
+        $options[$c] = $c;
+    }
+    return $options;
+});
+add_filter('woocommerce_csv_product_import_mapping_default_columns', function($columns){
+    foreach (['pa_color','pa_length','pa_width','pa_height','pa_weight','pa_option'] as $c) {
+        $columns[$c] = $c; // sarlavha = maydon
+    }
+    return $columns;
+});
+
+/* 2) Parser: CSV dagi pa_* ustunlarni atributlar massiviga qo‘shish */
+add_filter('woocommerce_product_importer_parsed_data', function($data){
+    $attrs = ['pa_color','pa_length','pa_width','pa_height','pa_weight','pa_option'];
+    if (empty($data['attributes'])) $data['attributes'] = [];
+    $pos = count($data['attributes']);
+
+    foreach ($attrs as $tax) {
+        if (empty($data[$tax])) continue;
+        $vals = preg_split('/\s*[|,]\s*/', (string)$data[$tax]);
+        $vals = array_filter(array_map('trim', $vals));
+        if (!$vals) continue;
+
+        $data['attributes'][] = [
+            'name'      => $tax,                    // global atribut (taxonomy)
+            'value'     => implode(' | ', $vals),   // "A | B | C"
+            'position'  => $pos++,
+            'visible'   => 1,
+            'variation' => 0,
+        ];
+    }
+    return $data;
+}, 10);
+
+/* 3) INSERT/UPDATE oldidan: mavjud productga ham atributlarni MAJBURIY yozish,
+      kerak bo‘lsa term(lar)ni yaratish */
+add_filter('woocommerce_product_import_pre_insert_product_object', function($product, $data){
+
+    $apply = function(WC_Product $product, $taxonomy, array $values, $position = 0){
+        if (!taxonomy_exists($taxonomy)) return;
+
+        // Termlarni yaratish/olish
+        $term_ids = [];
+        foreach ($values as $v) {
+            $v = trim($v);
+            if ($v === '') continue;
+            $term = get_term_by('name', $v, $taxonomy);
+            if (!$term) {
+                $res = wp_insert_term($v, $taxonomy);
+                if (!is_wp_error($res)) $term_ids[] = (int)$res['term_id'];
+            } else {
+                $term_ids[] = (int)$term->term_id;
+            }
+        }
+        if (!$term_ids) return;
+
+        $attr = new WC_Product_Attribute();
+        $attr->set_id( wc_attribute_taxonomy_id_by_name($taxonomy) );
+        $attr->set_name( $taxonomy );
+        $attr->set_options( $term_ids );
+        $attr->set_position( $position );
+        $attr->set_visible( true );
+        $attr->set_variation( false );
+
+        $all = $product->get_attributes();
+        $all[$taxonomy] = $attr;       // mavjudini ham ustidan yozadi
+        $product->set_attributes($all);
+    };
+
+    $taxes = ['pa_color','pa_length','pa_width','pa_height','pa_weight','pa_option'];
+    $pos   = 0;
+
+    foreach ($taxes as $tax) {
+        // 1) to‘g‘ridan-to‘g‘ri CSV ustunidan
+        $vals = [];
+        if (!empty($data[$tax])) {
+            $vals = preg_split('/\s*[|,]\s*/', (string)$data[$tax]);
+        }
+        // 2) yoki parsed attributes ichidan
+        if (!$vals && !empty($data['attributes'])) {
+            foreach ((array)$data['attributes'] as $a) {
+                if (!empty($a['name']) && $a['name']===$tax && !empty($a['value'])) {
+                    $vals = preg_split('/\s*\|\s*/', (string)$a['value']);
+                    break;
+                }
+            }
+        }
+        $vals = array_filter(array_map('trim', (array)$vals));
+        if ($vals) $apply($product, $tax, $vals, $pos++);
+    }
+
+    return $product;
+}, 10, 2);
+
+
+
+/**
  *  Basket
  */
 add_filter('woocommerce_add_to_cart_fragments', function ($fragments) {
