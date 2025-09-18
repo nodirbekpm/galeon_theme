@@ -6,10 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="9d3b5ac7-50a4-42dd-9d43-c83025160029" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/footer.php" beforeDir="false" afterPath="$PROJECT_DIR$/footer.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/functions.php" beforeDir="false" afterPath="$PROJECT_DIR$/functions.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/header.php" beforeDir="false" afterPath="$PROJECT_DIR$/header.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pages/page-wishlist.php" beforeDir="false" afterPath="$PROJECT_DIR$/pages/page-wishlist.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -32,6 +28,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;nodirbekpm&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/nodirbekpm/galeon_theme.git&quot;,
+    &quot;accountId&quot;: &quot;c54858be-c274-445b-902d-1e86fdaa1dba&quot;
+  }
+}</component>
   <component name="JoomlaConfiguration">
     <joomlaConfigPath />
     <joomlaPath />
@@ -50,7 +58,7 @@
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/OSPanel/home/galeon.dev/public/wp-content/themes/galeon_theme/assets/images&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/OSPanel/home/konstruktoredu.dev/public/wp-content/themes&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -69,8 +77,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-deb605915726-JavaScript-PS-243.22562.164" />
-        <option value="bundled-php-predefined-a98d8de5180a-7980c7aaca61-com.jetbrains.php.sharedIndexes-PS-243.22562.164" />
+        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-PS-243.26053.13" />
+        <option value="bundled-php-predefined-a98d8de5180a-1ec7b7818973-com.jetbrains.php.sharedIndexes-PS-243.26053.13" />
       </set>
     </attachedChunks>
   </component>
@@ -92,6 +100,8 @@
       <workItem from="1757315611452" duration="9362000" />
       <workItem from="1757442001622" duration="4195000" />
       <workItem from="1757695040479" duration="6296000" />
+      <workItem from="1757928003825" duration="2953000" />
+      <workItem from="1757934455158" duration="613000" />
     </task>
     <servers />
   </component>
