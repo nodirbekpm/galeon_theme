@@ -310,7 +310,7 @@ $shop_url    = function_exists('wc_get_page_permalink') ? wc_get_page_permalink(
             const CFG   = window.GALEON_ARCHIVE || {};
             const URL   = CFG.ajax_url || (window.ajaxurl || '/wp-admin/admin-ajax.php');
             const NONCE = CFG.nonce || '';
-            const STEP  = 4; // "Загрузить ещё"
+            const STEP  = 6; // "Загрузить ещё"
 
             // === Helpers ===
             const $  = (s, r=document)=>r.querySelector(s);

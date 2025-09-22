@@ -704,23 +704,24 @@ add_filter('woocommerce_default_gateway', function () {
     return 'nopay';
 });
 
-/* 4) Checkout maydonlarini soddalashtirish: faqat Ism/Telefon majburiy */
+/* 4) Checkout maydonlarini soddalashtirish: faqat Ism/Email/Telefon majburiy */
 add_filter('woocommerce_checkout_fields', function ($fields) {
-    // Billing
+    // Avval hammasini optional qilyapsiz — lekin email mehmon uchun required bo‘lsin:
     foreach ($fields['billing'] as &$f) {
         $f['required'] = false;
     }
     if (isset($fields['billing']['billing_first_name'])) $fields['billing']['billing_first_name']['required'] = true;
-    if (isset($fields['billing']['billing_phone'])) $fields['billing']['billing_phone']['required'] = true;
-    if (isset($fields['billing']['billing_email'])) $fields['billing']['billing_email']['required'] = false;
+    if (isset($fields['billing']['billing_phone']))       $fields['billing']['billing_phone']['required']       = true;
 
-    // Shipping — barchasi optional; courier tanlanganda serverda tekshiramiz
-    if (!empty($fields['shipping'])) {
-        foreach ($fields['shipping'] as &$f) {
-            $f['required'] = false;
-        }
+    if (isset($fields['billing']['billing_email'])) {
+        $fields['billing']['billing_email']['required'] = !is_user_logged_in(); // mehmonlar uchun majburiy
+        $fields['billing']['billing_email']['validate'] = array('email');       // Woo’ning email validatoridan foyd.
     }
-    // Order comments optional
+
+    // Shipping hammasi optional qoladi
+    if (!empty($fields['shipping'])) {
+        foreach ($fields['shipping'] as &$f) { $f['required'] = false; }
+    }
     if (isset($fields['order']['order_comments'])) $fields['order']['order_comments']['required'] = false;
 
     return $fields;
@@ -731,37 +732,27 @@ add_action('woocommerce_after_checkout_validation', function ($data, $errors) {
     $method = isset($_POST['delivery_method']) ? sanitize_text_field($_POST['delivery_method']) : 'manager';
 
     if (empty($_POST['billing_first_name'])) $errors->add('billing_first_name', 'Укажите имя.');
-    if (empty($_POST['billing_phone'])) $errors->add('billing_phone', 'Укажите телефон.');
+    if (empty($_POST['billing_phone']))      $errors->add('billing_phone', 'Укажите телефон.');
+
+    if (!is_user_logged_in()) {
+        $email = isset($_POST['billing_email']) ? sanitize_email($_POST['billing_email']) : '';
+        if (empty($email) || !is_email($email)) {
+            $errors->add('billing_email', 'Укажите корректный e-mail.');
+        }
+    }
 
     if ($method === 'courier') {
-        if (empty($_POST['shipping_city'])) $errors->add('shipping_city', 'Укажите город доставки.');
+        if (empty($_POST['shipping_city']))      $errors->add('shipping_city', 'Укажите город доставки.');
         if (empty($_POST['shipping_address_1'])) $errors->add('shipping_address_1', 'Укажите улицу и дом.');
     }
 }, 10, 2);
 
 /* 6) Buyurtmaga saqlash (shipping va custom meta) */
-add_action('woocommerce_checkout_create_order', function ($order, $data) {
-    $method = isset($_POST['delivery_method']) ? sanitize_text_field($_POST['delivery_method']) : 'manager';
-    $order->update_meta_data('_delivery_method', $method);
-
-    if ($method === 'courier') {
-        if (!empty($_POST['shipping_city'])) $order->set_shipping_city(sanitize_text_field($_POST['shipping_city']));
-        if (!empty($_POST['shipping_address_1'])) $order->set_shipping_address_1(sanitize_text_field($_POST['shipping_address_1']));
-
-        foreach ([
-                     '_delivery_building' => 'delivery_building',
-                     '_delivery_apartment' => 'delivery_apartment',
-                     '_delivery_entrance' => 'delivery_entrance',
-                     '_delivery_floor' => 'delivery_floor',
-                 ] as $meta_key => $post_key) {
-            if (!empty($_POST[$post_key])) {
-                $order->update_meta_data($meta_key, sanitize_text_field($_POST[$post_key]));
-            }
-        }
-    } elseif ($method === 'pickup') {
-        $order->update_meta_data('_pickup_address', 'Электродная улица, 13с2А');
+add_action('woocommerce_checkout_create_order', function ($order) {
+    if (!$order->get_billing_email() && !empty($_POST['billing_email'])) {
+        $order->set_billing_email( sanitize_email($_POST['billing_email']) );
     }
-}, 10, 2);
+}, 9);
 
 /* 7) Admin buyurtma sahifasida ko'rsatish (infoga qulay) */
 add_action('woocommerce_admin_order_data_after_billing_address', function ($order) {
@@ -940,6 +931,47 @@ add_action('woocommerce_admin_order_data_after_billing_address', function ($orde
 //    }
 //}
 
+/** -----------------------------------------------------------
+ * PRICELESS PRODUCTS (По запросу):
+ * - narx bo‘sh bo‘lsa ham sotib olinadigan qilish (add to cart ko‘rinsin)
+ * - katalogda "По запросу" deb chiqarish
+ * - cart/checkout hisob-kitobida narxni 0 ga tenglash (faqat sessiyada)
+ * ---------------------------------------------------------- */
+
+/* A) Narx bo‘sh bo‘lsa ham xaridga ruxsat berish (add to cart) */
+add_filter('woocommerce_is_purchasable', function($is_purchasable, $product){
+    $price = $product->get_price();
+    if (($price === '' || $price === null) && $product->is_in_stock()) {
+        return true;
+    }
+    return $is_purchasable;
+}, 10, 2);
+
+/* B) Katalog/single product sahifasida "0 ₽" o‘rniga "По запросу" chiqarish */
+add_filter('woocommerce_get_price_html', function($html, $product){
+    $price = $product->get_price();
+    if ($price === '' || $price === null) {
+        return '<span class="price-request">По запросу</span>';
+    }
+    return $html;
+}, 10, 2);
+
+/* C) Cart/Checkout hisob-kitobida bunday mahsulotlarni 0 ga tenglash (runtime) */
+add_action('woocommerce_before_calculate_totals', function($cart){
+    if (is_admin() && !defined('DOING_AJAX')) return;
+    if (empty($cart) || !method_exists($cart, 'get_cart')) return;
+
+    foreach ($cart->get_cart() as $cart_item) {
+        if (empty($cart_item['data']) || !is_object($cart_item['data'])) continue;
+        $product = $cart_item['data'];
+        $price   = $product->get_price();
+
+        if ($price === '' || $price === null) {
+            $product->set_price(0); // totals = 0, to‘lov talab qilinmaydi
+        }
+    }
+}, 20);
+
 
 
 
@@ -1015,59 +1047,59 @@ add_action('phpmailer_init', function ($phpmailer) {
 /**
  * Breadcrumb
  */
-// 1) Yoast breadcrumb linklarini universal tarzda sozlash:
-//    - Home/Shop tarjima
-//    - Barcha CPT arxivlari uchun matnni labels->archives (fallback: labels->name) dan olish
+/* A) Home bo‘lagi matni (Yoast’ning rasmiy filtri) */
+add_filter('wpseo_breadcrumb_home', function ($label) {
+    return 'Главная страница';
+});
+
+/* B) Links ro‘yxatini sozlash (lekin Home qo‘shmaymiz!) */
 add_filter('wpseo_breadcrumb_links', function ($links) {
-    // Home linkni yangilaymiz yoki qo‘shamiz
-    if (!empty($links)) {
-        // Eski "Home" linkni olib tashlab, o‘rniga "Главная страница" qo‘shamiz
-        $home_link = [
-            'url'  => home_url('/'),
-            'text' => 'Главная страница',
-        ];
+    // (i) Home’ni dublikat bo‘lsa tozalab yuboramiz — faqat birinchi uchraganini qoldiramiz
+    $out = [];
+    $seen_home = false;
+    $home_url_norm = trailingslashit( home_url('/') );
 
-        // Birinchi elementni tekshirib, almashtiramiz yoki yangisini boshiga qo‘shamiz
-        if (isset($links[0]) && $links[0]['url'] === home_url('/')) {
-            $links[0] = $home_link;
-        } else {
-            array_unshift($links, $home_link);
+    foreach ((array)$links as $item) {
+        $is_home = isset($item['url']) && trailingslashit($item['url']) === $home_url_norm;
+        if ($is_home) {
+            if ($seen_home) {
+                // ikkinchi (takror) "Home" ni tashlab yuboramiz
+                continue;
+            }
+            $seen_home = true;
+        }
+        $out[] = $item;
+    }
+
+    // (ii) WooCommerce shop arxivi uchun oxirgi bo‘lak nomini "Каталог"ga almashtirish
+    if ( (function_exists('is_shop') && is_shop()) || is_post_type_archive('product') ) {
+        if (!empty($out)) {
+            $last = count($out) - 1;
+            $out[$last]['text'] = 'Каталог';
         }
     }
 
-    // Faqat WooCommerce shop arxivi uchun – oxirgi elementni "Каталог" deb o‘zgartiramiz
-    if ((function_exists('is_shop') && is_shop()) || is_post_type_archive('product')) {
-        if (!empty($links)) {
-            $last = count($links) - 1;
-            $links[$last]['text'] = 'Каталог';
-        }
-    }
-
-    return $links;
+    return $out;
 }, 20);
 
-
-// 2) Separator ni <span>/</span> ko‘rinishida chiqarish
-add_filter('wpseo_breadcrumb_separator', function ($sep) {
+/* C) Separator */
+add_filter('wpseo_breadcrumb_separator', function () {
     return ' <span>/</span> ';
 });
 
-// 3) Oxirgi bo‘lakni <a class="active"> qilish
+/* D) Oxirgi bo‘lakni <a class="active"> qilib ko‘rsatish (xohish bo‘lsa qoldirasan) */
 add_filter('wpseo_breadcrumb_single_link', function ($link_output, $link) {
-    // Yoast oxirgi bo‘lakka 'breadcrumb_last' classli <span> beradi — uni <a class="active"> ga almashtiramiz
     if (strpos($link_output, 'breadcrumb_last') !== false) {
-        $url = !empty($link['url']) ? $link['url'] : get_permalink();
+        $url  = !empty($link['url']) ? $link['url'] : get_permalink();
         $text = isset($link['text']) ? $link['text'] : '';
-        return '<a href="' . esc_url($url) . '" class="active">' . $text . '</a>';
+        return '<a href="' . esc_url($url) . '" class="active">' . esc_html($text) . '</a>';
     }
     return $link_output;
 }, 10, 2);
 
-// 4) Ortiqcha wrapper <span> larni olib tashlash (faqat <a> va <span>/</span> qolsin)
+/* E) Ortiqcha <span> wrapperlarni tozalash */
 add_filter('wpseo_breadcrumb_output', function ($output) {
-    // <span> <a>...</a> </span>  ->  <a>...</a>
     $output = preg_replace('#<span[^>]*>\s*(<a[^>]+>.*?</a>)\s*</span>#', '$1', $output);
-    // Keraksiz ketma-ket bo‘sh joylarni tozalash
     $output = preg_replace('/\s+/', ' ', $output);
     return $output;
 });
@@ -1177,6 +1209,159 @@ add_action('wp_enqueue_scripts', function () {
 
 
 /**
+ * Product Import
+ *
+ */
+/* 1) CSV mapping: sarlavhalarni tanitish */
+add_filter('woocommerce_csv_product_import_mapping_options', function($options){
+    foreach (['pa_color','pa_length','pa_width','pa_height','pa_weight','pa_option'] as $c) {
+        $options[$c] = $c;
+    }
+    return $options;
+});
+add_filter('woocommerce_csv_product_import_mapping_default_columns', function($columns){
+    foreach (['pa_color','pa_length','pa_width','pa_height','pa_weight','pa_option'] as $c) {
+        $columns[$c] = $c; // sarlavha = maydon
+    }
+    return $columns;
+});
+
+/* Helper: CSV qiymatlarini ajratish */
+function galeon_attr_values_from_csv($raw){
+    if (is_array($raw)) $raw = implode(' | ', $raw);
+    $vals = preg_split('/\s*[|,]\s*/', (string)$raw);
+    $vals = array_filter(array_map('trim', $vals), function($v){ return $v !== ''; });
+    return array_values(array_unique($vals));
+}
+
+/* 2) Parser: CSV dagi pa_* ustunlarni atributlar massiviga qo‘shish */
+add_filter('woocommerce_product_importer_parsed_data', function($data){
+    $attrs = ['pa_color','pa_length','pa_width','pa_height','pa_weight','pa_option'];
+    if (empty($data['attributes'])) $data['attributes'] = [];
+    $pos = count($data['attributes']);
+
+    foreach ($attrs as $tax) {
+        if (empty($data[$tax])) continue;
+
+        $vals = galeon_attr_values_from_csv($data[$tax]);
+        if (!$vals) continue;
+
+        $data['attributes'][] = [
+            'name'      => $tax,                           // global atribut (taxonomy)
+            'value'     => implode(' | ', $vals),          // "A | B | C"
+            'position'  => $pos++,
+            'visible'   => 1,
+            'variation' => 0,
+        ];
+
+        // Keyinchalik post-term bog‘lash uchun original qiymatlarni ham saqlab yuboramiz
+        $data['_galeon_attr_raw'][$tax] = $vals;
+    }
+    return $data;
+}, 10);
+
+/* 3) INSERT/UPDATE oldidan: WC_Product_Attribute obyektini to‘g‘ri qurib qo‘yish
+      (import jarayonida product meta ichiga tushadi) */
+add_filter('woocommerce_product_import_pre_insert_product_object', function($product, $data){
+
+    if (empty($data['_galeon_attr_raw'])) return $product;
+
+    $all = $product->get_attributes();
+    $pos = is_array($all) ? count($all) : 0;
+
+    foreach ($data['_galeon_attr_raw'] as $taxonomy => $values) {
+        if (!taxonomy_exists($taxonomy)) continue;
+
+        // Termlarni chiqarib/yaratib, ID larini yig‘amiz
+        $term_ids = [];
+        foreach ($values as $v) {
+            $term = get_term_by('name', $v, $taxonomy);
+            if (!$term) {
+                $res = wp_insert_term($v, $taxonomy);
+                if (!is_wp_error($res)) {
+                    $term_ids[] = (int)$res['term_id'];
+                }
+            } else {
+                $term_ids[] = (int)$term->term_id;
+            }
+        }
+        if (!$term_ids) continue;
+
+        // WC_Product_Attribute
+        $attr = new WC_Product_Attribute();
+        $attr->set_id( wc_attribute_taxonomy_id_by_name($taxonomy) ); // global attr ID (bo‘lmasa 0 bo‘ladi — baribir taxonomy sifatida taniladi)
+        $attr->set_name( $taxonomy );
+        $attr->set_options( $term_ids );     // term_id lar
+        $attr->set_position( $pos++ );
+        $attr->set_visible( true );
+        $attr->set_variation( false );
+
+        if (!is_array($all)) $all = [];
+        $all[$taxonomy] = $attr;
+
+        // Keyingi hook’da term relate qilish uchun vaqtincha meta
+        // (import tugaganda ishonchli bog‘lab qo‘yamiz)
+        $product->update_meta_data('_galeon_attr_terms_'.$taxonomy, $term_ids);
+    }
+
+    $product->set_attributes($all);
+
+    return $product;
+}, 10, 2);
+
+/* 4) INSERTED: mahsulot saqlangandan keyin term relation’ni MAJBURIY qo‘yish
+      (CSV bilan kelgan atributlar bo‘yicha tax_query ishlashi uchun zarur) */
+add_action('woocommerce_product_import_inserted_product_object', function($product, $data){
+    $taxes = ['pa_color','pa_length','pa_width','pa_height','pa_weight','pa_option'];
+
+    foreach ($taxes as $taxonomy) {
+        if (!taxonomy_exists($taxonomy)) continue;
+
+        // 4.1) Agar pre_insert’da qo‘ygan meta bor bo‘lsa, shuni ishlatamiz
+        $term_ids = $product->get_meta('_galeon_attr_terms_'.$taxonomy, true);
+        if (!is_array($term_ids) || empty($term_ids)) {
+            // 4.2) Aks holda parsed_data ichidan qiymatlarni olib, termlarni topamiz/yaratamiz
+            $vals = [];
+            if (!empty($data['_galeon_attr_raw'][$taxonomy])) {
+                $vals = (array)$data['_galeon_attr_raw'][$taxonomy];
+            } elseif (!empty($data['attributes'])) {
+                foreach ((array)$data['attributes'] as $a) {
+                    if (!empty($a['name']) && $a['name'] === $taxonomy && !empty($a['value'])) {
+                        $vals = preg_split('/\s*\|\s*/', (string)$a['value']);
+                        $vals = array_map('trim', $vals);
+                        break;
+                    }
+                }
+            }
+            $term_ids = [];
+            foreach ($vals as $v) {
+                $term = get_term_by('name', $v, $taxonomy);
+                if (!$term) {
+                    $res = wp_insert_term($v, $taxonomy);
+                    if (!is_wp_error($res)) $term_ids[] = (int)$res['term_id'];
+                } else {
+                    $term_ids[] = (int)$term->term_id;
+                }
+            }
+        }
+
+        $term_ids = array_values(array_unique(array_map('intval', (array)$term_ids)));
+        if (!$term_ids) continue;
+
+        // MUHIM: mahsulotni pa_* taxonomiyalariga realdan bog‘laymiz
+        wp_set_object_terms($product->get_id(), $term_ids, $taxonomy, false);
+
+        // vaqtinchalik metani tozalaymiz
+        $product->delete_meta_data('_galeon_attr_terms_'.$taxonomy);
+    }
+
+    // Term counting & cache — Woo o‘zi yangilaydi, qo‘shimcha shart emas
+}, 10, 2);
+
+
+
+
+/**
  *  Basket
  */
 add_filter('woocommerce_add_to_cart_fragments', function ($fragments) {
@@ -1237,73 +1422,203 @@ function galeon_cart_url()
 
 
 /**
- *  Archive Products
+ * Archive Products (AJAX) + CSV/import fix:
+ * - pa_option/pa_color terms assignment
+ * - numeric attrs → meta sync
+ * - price meta sync
+ * - default-skip for ALL ranges (incl. price)
  */
-/**
- * ARCHIVE: AJAX bilan productlarni yuklash
- */
-add_action('wp_enqueue_scripts', function () {
-    wp_enqueue_script('jquery'); // bu head’da chiqadi
-    wp_localize_script('jquery', 'GALEON_ARCHIVE', [
-        'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce' => wp_create_nonce('galeon_archive_nonce'),
-        'per_page_default' => 9,
-    ]);
-});
 
-
-/**
- * Helper: term nomidan raqam ajratish ( "330 мм" => 330.0 )
- */
-function galeon_num_from_term_name($name)
-{
-    $v = trim(preg_replace('~[^0-9\.\,]+~', '', (string)$name));
-    $v = str_replace(',', '.', $v);
-    return ($v === '' || !is_numeric($v)) ? null : (float)$v;
-}
-
-/**
- * Helper: taxonomiyadan (masalan: pa_length) nomi raqam bo‘lgan
- * term_id larni [min,max] range bo‘yicha tanlash
- */
-function galeon_term_ids_in_range($taxonomy, $min = null, $max = null)
-{
-    if ($min === null && $max === null) return [];
-    $terms = get_terms(['taxonomy' => $taxonomy, 'hide_empty' => false]);
-    $out = [];
-    foreach ($terms as $t) {
-        $n = galeon_num_from_term_name($t->name);
-        if ($n === null) continue;
-        if ($min !== null && $n < $min) continue;
-        if ($max !== null && $n > $max) continue;
-        $out[] = (int)$t->term_id;
-    }
-    return $out;
-}
-
-/**
- * ARCHIVE: AJAX bilan productlarni yuklash (search + filterlar + facetlar)
- */
 add_action('wp_enqueue_scripts', function () {
     wp_enqueue_script('jquery');
     wp_localize_script('jquery', 'GALEON_ARCHIVE', [
-        'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce' => wp_create_nonce('galeon_archive_nonce'),
+        'ajax_url'         => admin_url('admin-ajax.php'),
+        'nonce'            => wp_create_nonce('galeon_archive_nonce'),
         'per_page_default' => 9,
     ]);
 });
 
-add_action('wp_ajax_nopriv_galeon_load_products', 'galeon_load_products');
-add_action('wp_ajax_galeon_load_products', 'galeon_load_products');
-function galeon_load_products(){
-nocache_headers();
+/** "330 мм" → 330.0 */
+if (!function_exists('galeon_num_from_term_name')) {
+    function galeon_num_from_term_name($name){
+        $v = trim(preg_replace('~[^0-9\.\,]+~', '', (string)$name));
+        $v = str_replace(',', '.', $v);
+        return ($v === '' || !is_numeric($v)) ? null : (float)$v;
+    }
+}
 
+/** Numeric attr → meta sync */
+if (!function_exists('galeon_sync_numeric_attrs')) {
+    function galeon_sync_numeric_attrs($product_id){
+        $map = [
+            'pa_length' => '_g_len',
+            'pa_width'  => '_g_wid',
+            'pa_height' => '_g_hei',
+            'pa_weight' => '_g_wei',
+        ];
+        foreach ($map as $tax => $meta_key) {
+            if (!taxonomy_exists($tax)) { delete_post_meta($product_id, $meta_key); continue; }
+            $names = wp_get_post_terms($product_id, $tax, ['fields'=>'names']);
+            $num   = null;
+            if ($names) {
+                foreach ($names as $nm) {
+                    $n = galeon_num_from_term_name($nm);
+                    if ($n !== null) { $num = $n; break; }
+                }
+            }
+            if ($num !== null) update_post_meta($product_id, $meta_key, $num);
+            else               delete_post_meta($product_id, $meta_key);
+        }
+    }
+}
+
+/** Atributlardan real term bog‘lash (CSV importda ko‘pincha shu joy “uzilib” qoladi) */
+if (!function_exists('galeon_ensure_tax_terms')) {
+    function galeon_ensure_tax_terms($product_id){
+        $product = wc_get_product($product_id);
+        if (!$product) return;
+
+        $taxes_to_fix = ['pa_option','pa_color']; // kerak bo‘lsa kengaytirishingiz mumkin
+        $attrs = $product->get_attributes();
+        if (empty($attrs)) return;
+
+        foreach ($attrs as $key => $attr) {
+            $tax = is_numeric($key) ? $attr->get_name() : $key;
+            if (!in_array($tax, $taxes_to_fix, true)) continue;
+            if (!taxonomy_exists($tax)) continue;
+
+            $opts = (array) $attr->get_options();
+            $term_ids = [];
+
+            foreach ($opts as $opt){
+                if (is_numeric($opt)) {
+                    $term_ids[] = (int)$opt;
+                } else {
+                    // qiymat nom bilan kelgan bo‘lsa → term yarat/ol
+                    $name = trim((string)$opt);
+                    if ($name==='') continue;
+                    $term = get_term_by('name', $name, $tax);
+                    if (!$term) {
+                        $res = wp_insert_term($name, $tax);
+                        if (!is_wp_error($res)) $term_ids[] = (int)$res['term_id'];
+                    } else {
+                        $term_ids[] = (int)$term->term_id;
+                    }
+                }
+            }
+            if ($term_ids) {
+                // post-term relation’ni majburan yozamiz
+                wp_set_post_terms($product_id, $term_ids, $tax, false);
+            }
+        }
+    }
+}
+
+/** Narx meta sync (_price) */
+if (!function_exists('galeon_sync_price_meta')) {
+    function galeon_sync_price_meta($product_id){
+        $product = wc_get_product($product_id);
+        if (!$product) return;
+
+        // simple: get_price() odatda _price’ni qaytaradi; yo‘q bo‘lsa regulardan o‘qiymiz
+        $price = $product->get_price('edit');
+        if ($price === '' || $price === null) {
+            $reg = $product->get_regular_price('edit');
+            $sale= $product->get_sale_price('edit');
+            $price = ($sale !== '' && $sale !== null) ? $sale : $reg;
+        }
+        if ($price !== '' && $price !== null) {
+            update_post_meta($product_id, '_price', wc_format_decimal($price));
+        } else {
+            delete_post_meta($product_id, '_price');
+        }
+
+        // Lookup jadvallarini ham yangilab qo‘yamiz (narx/atribut ko‘rsatkichlari uchun)
+        if (function_exists('wc_update_product_lookup_tables')) {
+            wc_update_product_lookup_tables($product_id);
+        }
+    }
+}
+
+/** IMPORT: product saqlangach — hammasini sync */
+add_action('woocommerce_product_import_inserted_product_object', function($product){
+    $pid = $product->get_id();
+    galeon_ensure_tax_terms($pid);
+    galeon_sync_numeric_attrs($pid);
+    galeon_sync_price_meta($pid);
+}, 30, 1);
+
+/** ADMIN saqlaganda ham sync */
+add_action('save_post_product', function($post_id, $post, $update){
+    if (!$update) return;
+    galeon_ensure_tax_terms($post_id);
+    galeon_sync_numeric_attrs($post_id);
+    galeon_sync_price_meta($post_id);
+}, 10, 3);
+
+/** Bir martalik to‘liq reindex: /wp-admin/?galeon_reindex_all=1 */
+add_action('admin_init', function(){
+    if (!current_user_can('manage_options')) return;
+    if (isset($_GET['galeon_reindex_all'])) {
+        $ids = get_posts([
+            'post_type'=>'product','post_status'=>'publish',
+            'fields'=>'ids','posts_per_page'=>-1,'no_found_rows'=>true,
+        ]);
+        foreach ($ids as $pid){
+            galeon_ensure_tax_terms($pid);
+            galeon_sync_numeric_attrs($pid);
+            galeon_sync_price_meta($pid);
+        }
+        wp_die('Reindexed: '.count($ids).' products');
+    }
+});
+
+/** Global facets (min/max) — meta’lardan */
+if (!function_exists('galeon_global_facets')) {
+    function galeon_global_facets(){
+        global $wpdb;
+        $ids_sql = "SELECT ID FROM {$wpdb->posts} WHERE post_type='product' AND post_status='publish'";
+
+        $mm = function($meta_key) use ($wpdb, $ids_sql){
+            $min = $wpdb->get_var("
+                SELECT MIN(CAST(pm.meta_value AS DECIMAL(12,4)))
+                FROM {$wpdb->postmeta} pm
+                JOIN ({$ids_sql}) p ON p.ID = pm.post_id
+                WHERE pm.meta_key = '{$meta_key}' AND pm.meta_value <> ''
+            ");
+            $max = $wpdb->get_var("
+                SELECT MAX(CAST(pm.meta_value AS DECIMAL(12,4)))
+                FROM {$wpdb->postmeta} pm
+                JOIN ({$ids_sql}) p ON p.ID = pm.post_id
+                WHERE pm.meta_key = '{$meta_key}' AND pm.meta_value <> ''
+            ");
+            return [
+                'min' => is_null($min) ? 0 : (0 + $min),
+                'max' => is_null($max) ? 0 : (0 + $max),
+            ];
+        };
+
+        return [
+            'price' => $mm('_price'),
+            'len'   => $mm('_g_len'),
+            'wid'   => $mm('_g_wid'),
+            'hei'   => $mm('_g_hei'),
+            'wei'   => $mm('_g_wei'),
+        ];
+    }
+}
+
+/** === AJAX yuklash === */
+add_action('wp_ajax_nopriv_galeon_load_products', 'galeon_load_products');
+add_action('wp_ajax_galeon_load_products',        'galeon_load_products');
+
+function galeon_load_products(){
+    nocache_headers();
     if (empty($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'galeon_archive_nonce')) {
         wp_send_json_error(['message' => 'Bad nonce'], 403);
     }
 
-    // --- UI’dan ---
-    $mode     = sanitize_text_field($_POST['mode'] ?? 'replace'); // replace | append
+    $mode     = sanitize_text_field($_POST['mode'] ?? 'replace');
     $page     = max(1, intval($_POST['page'] ?? 1));
     $per_page = max(1, intval($_POST['per_page'] ?? 9));
     $search   = sanitize_text_field($_POST['search'] ?? '');
@@ -1328,7 +1643,6 @@ nocache_headers();
         $variants = array_values(array_unique(array_filter($variants)));
     }
 
-    // --- tax/meta query ---
     $tax_query  = ['relation' => 'AND'];
     $meta_query = ['relation' => 'AND'];
 
@@ -1339,139 +1653,80 @@ nocache_headers();
         $tax_query[] = ['taxonomy' => 'pa_option', 'field' => 'slug', 'terms' => $variants, 'operator' => 'IN'];
     }
 
-    $attr_ranges = [
-        'pa_length' => [$len_min, $len_max],
-        'pa_width'  => [$wid_min, $wid_max],
-        'pa_height' => [$hei_min, $hei_max],
-        'pa_weight' => [$wei_min, $wei_max],
+    // Facets va default-skip
+    $facets = galeon_global_facets();
+    $EPS    = 0.0001;
+
+    $range_to_meta = [
+        ['mn'=>$len_min, 'mx'=>$len_max, 'meta'=>'_g_len', 'glob'=>$facets['len']],
+        ['mn'=>$wid_min, 'mx'=>$wid_max, 'meta'=>'_g_wid', 'glob'=>$facets['wid']],
+        ['mn'=>$hei_min, 'mx'=>$hei_max, 'meta'=>'_g_hei', 'glob'=>$facets['hei']],
+        ['mn'=>$wei_min, 'mx'=>$wei_max, 'meta'=>'_g_wei', 'glob'=>$facets['wei']],
     ];
-    foreach ($attr_ranges as $tax => $pair) {
-        list($mn, $mx) = $pair;
-        if ($mn === null && $mx === null) continue;
-        $term_ids = galeon_term_ids_in_range($tax, $mn, $mx);
-        if (!empty($term_ids)) {
-            $tax_query[] = ['taxonomy' => $tax, 'field' => 'term_id', 'terms' => $term_ids, 'operator' => 'IN'];
-        } else {
-            wp_send_json_success([
-                'mode' => $mode,
-                'html' => '',
-                'total' => 0,
-                'page' => $page,
-                'per_page' => $per_page,
-                'total_pages' => 0,
-                'wish'        => galeon_current_wishlist_ids(),
-                'facets' => [
-                    'price' => ['min' => 0, 'max' => 0], 'len' => ['min' => 0, 'max' => 0],
-                    'wid' => ['min' => 0, 'max' => 0], 'hei' => ['min' => 0, 'max' => 0], 'wei' => ['min' => 0, 'max' => 0],
-                ],
-            ]);
-        }
+    foreach ($range_to_meta as $r) {
+        $gmin = isset($r['glob']['min']) ? (float)$r['glob']['min'] : null;
+        $gmax = isset($r['glob']['max']) ? (float)$r['glob']['max'] : null;
+        $mn = ($r['mn'] === null) ? $gmin : (float)$r['mn'];
+        $mx = ($r['mx'] === null) ? $gmax : (float)$r['mx'];
+        if ($gmin === null || $gmax === null || !is_numeric($mn) || !is_numeric($mx)) continue;
+        if (abs($mn-$gmin) < $EPS && abs($mx-$gmax) < $EPS) continue;
+        if ($mn <= $mx) $meta_query[] = ['key'=>$r['meta'], 'compare'=>'BETWEEN', 'type'=>'NUMERIC', 'value'=>[$mn,$mx]];
     }
 
-    if ($price_min !== null || $price_max !== null) {
-        $cmp = [];
-        if ($price_min !== null && $price_max !== null) $cmp = ['compare' => 'BETWEEN', 'type' => 'NUMERIC', 'value' => [$price_min, $price_max]];
-        elseif ($price_min !== null)                    $cmp = ['compare' => '>=',      'type' => 'NUMERIC', 'value' => $price_min];
-        else                                            $cmp = ['compare' => '<=',      'type' => 'NUMERIC', 'value' => $price_max];
-
+    // PRICE: ham default-skip
+    $g_price_min = (float)$facets['price']['min'];
+    $g_price_max = (float)$facets['price']['max'];
+    $mn = ($price_min === null) ? $g_price_min : (float)$price_min;
+    $mx = ($price_max === null) ? $g_price_max : (float)$price_max;
+    if (is_numeric($mn) && is_numeric($mx) && !((abs($mn-$g_price_min)<$EPS) && (abs($mx-$g_price_max)<$EPS))) {
         $meta_query[] = [
             'relation' => 'OR',
-            array_merge(['key' => '_price'], $cmp),
-            array_merge(['key' => '_min_variation_price'], $cmp),
+            ['key'=>'_price','compare'=>'BETWEEN','type'=>'NUMERIC','value'=>[$mn,$mx]],
+            ['key'=>'_min_variation_price','compare'=>'BETWEEN','type'=>'NUMERIC','value'=>[$mn,$mx]],
         ];
     }
 
-// === [B] SEARCH (title OR SKU OR category-name) ===
+    // === SEARCH (title OR SKU OR category-name)
     $post__in = null;
     if ($search !== '') {
         $search = trim($search);
 
-        // 1) Title bo‘yicha
         $ids_title = get_posts([
-            'post_type'      => 'product',
-            'post_status'    => 'publish',
-            's'              => $search,
-            'fields'         => 'ids',
-            'posts_per_page' => -1,
-            'no_found_rows'  => true,
+            'post_type'=>'product','post_status'=>'publish','s'=>$search,
+            'fields'=>'ids','posts_per_page'=>-1,'no_found_rows'=>true,
         ]);
-
-        // 2) SKU bo‘yicha (SIMPLE/VARIABLE parent productlarda _sku)
         $ids_sku_prod = get_posts([
-            'post_type'      => 'product',
-            'post_status'    => 'publish',
-            'meta_query'     => [[
-                'key'     => '_sku',
-                'value'   => $search,
-                'compare' => 'LIKE',
-            ]],
-            'fields'         => 'ids',
-            'posts_per_page' => -1,
-            'no_found_rows'  => true,
+            'post_type'=>'product','post_status'=>'publish',
+            'meta_query'=>[[ 'key'=>'_sku','value'=>$search,'compare'=>'LIKE' ]],
+            'fields'=>'ids','posts_per_page'=>-1,'no_found_rows'=>true,
         ]);
-
-        // 3) SKU bo‘yicha (VARIATION postlarida _sku ko‘p hollarda shu yerda turadi)
         $ids_sku_var = get_posts([
-            'post_type'      => 'product_variation',
-            'post_status'    => 'publish',
-            'meta_query'     => [[
-                'key'     => '_sku',
-                'value'   => $search,
-                'compare' => 'LIKE',
-            ]],
-            'fields'         => 'ids',
-            'posts_per_page' => -1,
-            'no_found_rows'  => true,
+            'post_type'=>'product_variation','post_status'=>'publish',
+            'meta_query'=>[[ 'key'=>'_sku','value'=>$search,'compare'=>'LIKE' ]],
+            'fields'=>'ids','posts_per_page'=>-1,'no_found_rows'=>true,
         ]);
-
-        // 3a) Topilgan variation’larning parent product ID’lari
         $ids_sku_parent = [];
-        if (!empty($ids_sku_var)) {
-            foreach ($ids_sku_var as $vid) {
-                $parent_id = (int) get_post_field('post_parent', $vid);
-                if ($parent_id > 0) {
-                    $ids_sku_parent[] = $parent_id;
-                }
-            }
+        foreach ($ids_sku_var as $vid){
+            $parent_id = (int) get_post_field('post_parent', $vid);
+            if ($parent_id > 0) $ids_sku_parent[] = $parent_id;
         }
-
-        // 4) Term nomi bo‘yicha qidiruv (product_cat name LIKE '%$search%'), topilgan term’larga tegishli product ID’lar
         $ids_cats = [];
-        $cat_terms = get_terms([
-            'taxonomy'   => 'product_cat',
-            'hide_empty' => false,
-            'search'     => $search, // term name LIKE
-            'number'     => 50,
-        ]);
+        $cat_terms = get_terms(['taxonomy'=>'product_cat','hide_empty'=>false,'search'=>$search,'number'=>50]);
         if (!empty($cat_terms) && !is_wp_error($cat_terms)) {
             $term_ids = wp_list_pluck($cat_terms, 'term_id');
-            if (!empty($term_ids)) {
+            if ($term_ids) {
                 $ids_cats = get_posts([
-                    'post_type'      => 'product',
-                    'post_status'    => 'publish',
-                    'fields'         => 'ids',
-                    'posts_per_page' => -1,
-                    'no_found_rows'  => true,
-                    'tax_query'      => [[
-                        'taxonomy'         => 'product_cat',
-                        'field'            => 'term_id',
-                        'terms'            => $term_ids,
-                        'include_children' => true,
-                        'operator'         => 'IN',
-                    ]],
+                    'post_type'=>'product','post_status'=>'publish','fields'=>'ids',
+                    'posts_per_page'=>-1,'no_found_rows'=>true,
+                    'tax_query'=>[[ 'taxonomy'=>'product_cat','field'=>'term_id','terms'=>$term_ids,'include_children'=>true,'operator'=>'IN' ]],
                 ]);
             }
         }
 
-        // 5) Barchasini birlashtiramiz (unique)
         $post__in = array_values(array_unique(array_map('intval', array_merge(
-            $ids_title ?: [],
-            $ids_sku_prod ?: [],
-            $ids_sku_parent ?: [], // ← variation SKU parent productlari
-            $ids_cats ?: []
+            $ids_title ?: [], $ids_sku_prod ?: [], $ids_sku_parent ?: [], $ids_cats ?: []
         ))));
 
-        // 6) Hech narsa topilmasa — bo‘sh javob
         if (empty($post__in)) {
             wp_send_json_success([
                 'mode'        => $mode,
@@ -1480,16 +1735,16 @@ nocache_headers();
                 'page'        => $page,
                 'per_page'    => $per_page,
                 'total_pages' => 0,
-                'facets'      => galeon_global_facets(), // global facets baribir qaytadi
+                'facets'      => $facets,
+                'wish'        => function_exists('galeon_current_wishlist_ids') ? galeon_current_wishlist_ids() : [],
             ]);
         }
     }
 
-// --- Query args ---
+    // Query
     $args = [
         'post_type'           => 'product',
         'post_status'         => 'publish',
-        // 's' => $search, // ❌ kerak emas: post__in bilan filterlayapmiz
         'tax_query'           => $tax_query,
         'meta_query'          => $meta_query,
         'orderby'             => 'date',
@@ -1497,22 +1752,19 @@ nocache_headers();
         'ignore_sticky_posts' => true,
         'no_found_rows'       => false,
     ];
-    if (!empty($post__in)) {
-        $args['post__in'] = $post__in;
-    }
+    if (!empty($post__in)) $args['post__in'] = $post__in;
 
     if ($mode === 'append') {
         $offset = max(0, intval($_POST['offset'] ?? 0));
         $limit  = max(1, intval($_POST['limit'] ?? 4));
         $args['posts_per_page'] = $limit;
-        $args['offset'] = $offset;
+        $args['offset']         = $offset;
     } else {
         $args['posts_per_page'] = $per_page;
-        $args['paged'] = $page;
+        $args['paged']          = $page;
     }
 
     $q = new WP_Query($args);
-
 
     ob_start();
     if ($q->have_posts()) {
@@ -1525,11 +1777,8 @@ nocache_headers();
     }
     $html = ob_get_clean();
 
-    $total = intval($q->found_posts);
+    $total       = (int) $q->found_posts;
     $total_pages = ($mode === 'append') ? 0 : ($per_page ? (int)ceil($total / $per_page) : 1);
-
-    // === [A] GLOBAL FACETS — butun baza bo‘yicha (filtrlardan mustaqil)
-    $facet = galeon_global_facets();
 
     wp_send_json_success([
         'mode'        => $mode,
@@ -1538,9 +1787,11 @@ nocache_headers();
         'page'        => $page,
         'per_page'    => $per_page,
         'total_pages' => $total_pages,
-        'facets'      => $facet,
+        'facets'      => $facets,
+        'wish'        => function_exists('galeon_current_wishlist_ids') ? galeon_current_wishlist_ids() : [],
     ]);
 }
+
 
 
 /**

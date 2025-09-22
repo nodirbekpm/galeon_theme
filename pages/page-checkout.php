@@ -107,6 +107,12 @@ $cart = WC()->cart;
                     <input required type="text" name="billing_first_name" placeholder="Имя*"
                            value="<?php echo esc_attr($checkout->get_value('billing_first_name')); ?>">
 
+                    <input type="email"
+                           name="billing_email"
+                           placeholder="E-mail*"
+                           value="<?php echo esc_attr($checkout->get_value('billing_email')); ?>"
+                           autocomplete="email" required>
+
                     <input required type="tel" id="phone" name="billing_phone" placeholder="Телефон*"
                            value="<?php echo esc_attr($checkout->get_value('billing_phone')); ?>">
 

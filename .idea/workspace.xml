@@ -6,10 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="9d3b5ac7-50a4-42dd-9d43-c83025160029" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/js/auth-modal.v2.js" beforeDir="false" afterPath="$PROJECT_DIR$/assets/js/auth-modal.v2.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/functions.php" beforeDir="false" afterPath="$PROJECT_DIR$/functions.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pages/page-my-account.php" beforeDir="false" afterPath="$PROJECT_DIR$/pages/page-my-account.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/woocommerce/archive-product.php" beforeDir="false" afterPath="$PROJECT_DIR$/woocommerce/archive-product.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,6 +89,8 @@
       <workItem from="1757315611452" duration="9362000" />
       <workItem from="1757442001622" duration="4195000" />
       <workItem from="1757695040479" duration="6296000" />
+      <workItem from="1758166430683" duration="5997000" />
+      <workItem from="1758274544442" duration="5983000" />
     </task>
     <servers />
   </component>
@@ -100,6 +99,17 @@
   </component>
   <component name="WordPressConfiguration" enabled="true">
     <wordpressPath>C:\OSPanel\home\galeon.dev\public</wordpressPath>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="php">
+          <url>file://$PROJECT_DIR$/functions.php</url>
+          <line>1974</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
